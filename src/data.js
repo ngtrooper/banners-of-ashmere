@@ -29,7 +29,7 @@ export const HEROES = [
     abil: { name: 'Shadowstep', text: 'Vanishes and reappears beside the most dangerous ranged foe nearby, striking a guaranteed 400% ATK crit.' } },
   { id: 'sylwen', name: 'Sylwen Thornleaf', title: 'Warden of the Elderwood', cls: 'archer', attr: 'nature', unlock: 0,
     // painted (non-pixel) art: exported at 2x, shown at 0.5 with LINEAR filtering
-    sprite: { key: 'sylwen', url: './sprites/sylwen.png', fw: 112, fh: 176, frames: 5, scale: 0.5, linear: true, ox: 0.399, oy: 0.96, hitFrame: 3, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 50 }, portrait: './sprites/sylwen-portrait.png',
+    sprite: { key: 'sylwen', url: './sprites/sylwen.png', fw: 118, fh: 176, frames: 5, scale: 0.5, linear: true, ox: 0.399, oy: 0.997, hitFrame: 3, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 50 }, portrait: './sprites/sylwen-portrait.png',
     base: { atk: 95, hp: 1200, def: 4, aspd: 1.0, move: 95, range: 340, crit: 0.15, critDmg: 1.75 },
     abil: { name: 'Thornvolley', text: 'Looses thorned arrows at the 10 nearest foes for 180% ATK each.' } },
   { id: 'maera', name: 'Maera of the Ember Crown', title: 'Drake-bonded Pyromancer', cls: 'mage', attr: 'fire', unlock: 0,
