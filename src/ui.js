@@ -63,6 +63,9 @@ function updateHeroes() {
     d.querySelector('.lv').textContent = 'Lv ' + S.heroLv[h.id];
     d.querySelector('.atk').textContent = fmt1(st.atk); d.querySelector('.hp').textContent = fmt1(st.hp); d.querySelector('.pwr').textContent = fmt1(power(st));
     d.querySelector('.hpbar i').style.width = (u ? 100 * u.hp / u.max : 0) + '%';
+    const fl = sc()?.fallenOf?.(h.id); d.classList.toggle('fallen', !!fl);
+    let rs = d.querySelector('.resp'); if (fl && !rs) { rs = document.createElement('div'); rs.className = 'resp'; d.querySelector('.portrait').appendChild(rs); }
+    if (rs) rs.textContent = fl ? `${Math.ceil(fl.t)}s` : '';
     const t = d.querySelector('.train'), a = d.querySelector('.abil'), r = d.querySelector('.recruit');
     if (t) { t.querySelector('small').textContent = fmt(heroCost(h.id)) + ' gold'; t.disabled = S.gold < heroCost(h.id); }
     if (a) { a.querySelector('small').textContent = `Rank ${S.abilLv[h.id]} · ${fmt(abilCost(h.id))} gold`; a.disabled = S.gold < abilCost(h.id); }

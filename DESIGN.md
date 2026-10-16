@@ -185,3 +185,21 @@ Franklin generated the sheets. `tools/make_sprites_gen2.py` and `tools/make_scen
 - The feet share a common ground line, and the art's own up/down bob is kept, so the code bob is turned off for him (`artBob`).
 - The sequence is a clean loop: contact, down, pass, up, then the same for the other leg.
 - The stride is 90 px per cycle, so the planted foot keeps pace with the ground.
+
+## M1.13 — Defeat effects and respawn (Aldric's 24-frame walk evaluated, not shipped)
+
+**24-frame walk (not shipped):**
+- **A, generated 3×8 sheet:** leg spread is a flat 94–104 px across all 24 frames. There's no passing pose, so it isn't a coherent cycle.
+- **B, cutout rig of his idle art** (`tools/rig_aldric_walk.py`): the sword and tabard cover his legs in every source frame. The visible lower-leg pieces are too small to rig, and they read as stumps when swung.
+- **Result:** both are clearly worse than v6's 8 drawn poses in a side-by-side GIF, so `aldric_v6` stays.
+
+**Defeat effects** (pooled sprites and a capped particle list; nothing is created during the sim):
+- **Goblins:** white flash, knock-back tilt and fade, a dust puff, and the existing gold pop.
+- **Heroes:** collapse and fade, a dust puff, soul wisps rising, and a grey tombstone with a countdown.
+- **Warchief and Rift:** a big burst with screen shake.
+
+**Respawn:**
+- A fallen hero returns after 15 s at the back of the formation, with a pillar of light and 1 s of invulnerability (blinking).
+- Hero cards grey out the portrait and show the countdown.
+- The stage restarts only when every hero is down at once.
+- Timers run in `step()`, so the 30-minute sim honours respawn. A fresh-game sim now reaches stage 26, up from 20.

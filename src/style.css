@@ -62,3 +62,7 @@ h2,h3,.brand,.name,#tabs button{font-family:Georgia,"Times New Roman",serif}
 .glyph-hero{font-size:48px;color:#fff;--ox:.5;--oy:1;width:60px;height:70px}
 .altar.done .reveal{opacity:1;transition:opacity .25s steps(3)}
 .reveal-card{margin:6px auto;max-width:420px}.reveal-card h3{margin:2px 0}
+
+.hero-card.fallen .portrait{filter:grayscale(1) brightness(.6)}
+.resp{position:absolute;inset:0;display:grid;place-items:center;font:700 20px Georgia,serif;color:#e8e0ff;text-shadow:0 0 4px #000,0 0 2px #000}
+.resp:empty{display:none}

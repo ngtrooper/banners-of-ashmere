@@ -5,6 +5,7 @@ export const W = 960, H = 440, GROUND = 400;
 const stretch = () => Math.min(2000, 1100 + S.stage * 45); // short early stages, longer later
 const RANGED = new Set(['archer', 'mage', 'cleric']);
 const LANE = { knight: -50, rogue: -22, archer: -88, mage: -72, cleric: -38 }; // all feet land on the ground strip (y 296..440)
+const RESPAWN = 15; // seconds until a fallen hero returns
 const PARALLAX = { far: 0.15, near: 0.45, ground: 1 };
 const ENEMY_LIST = Object.values(ENEMIES);
 // attack timeline: cumulative end time of each attack frame (per-frame durations when given)
@@ -21,7 +22,8 @@ export class Battle extends Phaser.Scene {
     for (const nm in BACKDROPS) for (const l in PARALLAX) this.load.image(`bg-${nm}-${l}`, `./bg/${nm}-${l}_v1.webp`);
   }
   create() {
-    this.pool = []; this.units = []; this.drops = []; this.shots = []; this.fxs = [];
+    this.pool = []; this.units = []; this.drops = []; this.shots = []; this.fxs = []; this.dfx = []; this.parts = []; this.fallen = [];
+    this.markTxt = []; for (let i = 0; i < 5; i++) this.markTxt.push(this.add.text(0, 0, '', { fontFamily: 'Georgia,serif', fontSize: '13px', fontStyle: 'bold', color: '#e8e0ff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(9).setVisible(false));
     this.layers = {};
     for (const nm in BACKDROPS) this.layers[nm] = Object.keys(PARALLAX).map(l => { const b = BACKDROPS[nm][l], key = `bg-${nm}-${l}`;
       if (!this.textures.exists(key) || this.textures.get(key).key === '__MISSING') return null;
@@ -48,12 +50,33 @@ export class Battle extends Phaser.Scene {
   get(u) {
     const o = this.pool.pop() || {};
     Object.assign(o, { dead: false, anim: null, pending: null, cd: Math.random() * 0.5, abilCd: 3, stun: 0, boss: false, portal: false, shielded: false, hero: null, etype: null, idle: false, sprite: null, ss: 1, moving: false, phase: Math.random() * 4, tint: 0,
-      cls: 'knight', attr: 'nature', splash: 0, heal: 0, crit: 0, critDmg: 1.5, def: 0, aspd: 1, move: 0, range: 20, atk: 0 }, u);
+      inv: 0, fr: 0, cls: 'knight', attr: 'nature', splash: 0, heal: 0, crit: 0, critDmg: 1.5, def: 0, aspd: 1, move: 0, range: 20, atk: 0 }, u);
     this.units.push(o); return o;
   }
   spawnHero(h, x) {
     const st = heroStats(h);
     return this.get({ side: 0, hero: h, cls: h.cls, attr: h.attr, ...st, max: st.hp, x: x - CLASSES[h.cls].form, y: GROUND + LANE[h.cls], r: h.sprite && h.sprite.fh > 150 ? 30 : 22, color: ATTRS[h.attr].color, sprite: h.sprite && this.okSprite[h.sprite.key] ? h.sprite : null });
+  }
+  respawn(f) {
+    const live = this.units.filter(u => u.hero && !u.dead); if (!live.length) return;   // full wipe: the stage restart handles it
+    const back = Math.min(...live.map(u => u.x)), u = this.spawnHero(f.hero, back + CLASSES[f.hero.cls].form - 50);
+    u.inv = 1; u.abilCd = 2;
+    if (!this.sim) { this.fxs.push({ pillar: true, x: u.x, y: u.y + u.r, r: 34, c: 0xfff3b0, t: 0.6 }); this.puff(u.x, u.y + u.r - 40, 14, 0xfff3b0, 90, -60); }
+  }
+  // ---- defeat effects (pooled sprites + a capped particle list; skipped entirely while simulating) ----
+  puff(x, y, n, c, spd, vy0 = -20, sz = 3) {
+    for (let i = 0; i < n && this.parts.length < 360; i++) { const a = Math.random() * Math.PI * 2, s = spd * (0.4 + Math.random() * 0.6);
+      this.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.6 + vy0, life: 0.5 + Math.random() * 0.4, c, sz }); }
+  }
+  defeatFx(t) {
+    if (this.sim) return;
+    if (t.portal) { this.puff(t.x, t.y, 60, 0xc070ff, 220, -40, 4); this.puff(t.x, t.y, 30, 0xffffff, 140, -30); this.fxs.push({ x: t.x, y: t.y, r: 130, c: 0xc070ff, t: 0.5 }); this.cameras.main.shake(320, 0.008); return; }
+    const sp = t.sprite;
+    if (sp) this.dfx.push({ sp, fr: t.fr, x: t.x, y: t.y + t.r, flip: t.side === 1, sc: sp.scale * t.ss, tint: t.tint, t: 0, dur: t.hero ? 0.9 : 0.45, hero: !!t.hero, dir: t.side === 1 ? 1 : -1 });
+    const feet = t.y + t.r;
+    if (t.hero) { this.puff(t.x, feet - 10, 16, 0xb8b0a0, 70, -10); for (let i = 0; i < 10; i++) this.parts.push({ x: t.x + (Math.random() - 0.5) * 20, y: feet - 40 - Math.random() * 30, vx: (Math.random() - 0.5) * 14, vy: -40 - Math.random() * 30, life: 1.2 + Math.random() * 0.5, c: 0xd8f0ff, sz: 3, wisp: true }); }
+    else this.puff(t.x, feet - 6, t.boss ? 40 : 8, 0xa89a88, t.boss ? 160 : 60, -15, t.boss ? 4 : 3);
+    if (t.boss) { this.puff(t.x, feet - 30, 30, 0xffd27a, 200, -60); this.fxs.push({ x: t.x, y: feet - 30, r: 110, c: 0xffb040, t: 0.45 }); this.cameras.main.shake(260, 0.006); }
   }
   addHero(id) { const h = HEROES.find(x => x.id === id); this.spawnHero(h, this.camX + 260); }
   refreshHero(id) {
@@ -61,9 +84,11 @@ export class Battle extends Phaser.Scene {
       const r = u.hp / u.max, st = heroStats(u.hero); Object.assign(u, st); u.max = st.hp; u.hp = u.max * Math.min(1, r + 0.2);
     }
   }
+  fallenOf(id) { return this.fallen.find(f => f.hero.id === id); }
   heroUnit(id) { return this.units.find(u => u.hero && u.hero.id === id && !u.dead); }
   startStage(x0) {
     for (const u of this.units) u.dead = true;
+    this.fallen.length = 0; this.dfx.length = 0;
     this.stageX = x0; this.camX = x0; this.bossSpawned = false; this.spawnTimer = 1;
     this.gs = (1 + 0.5 * (S.stage - 1)) * oathMult(); // gold per kill (linear for now)
     for (const h of HEROES) if (S.unlocked[h.id]) this.spawnHero(h, x0 + 240);
@@ -101,14 +126,15 @@ export class Battle extends Phaser.Scene {
   }
   wake(u) { u.idle = false; for (const o of this.units) if (o.idle && Math.abs(o.x - u.x) < 240) o.idle = false; }
   deal(src, t, mult, forceCrit) {
-    if (t.dead || t.shielded) return;
+    if (t.dead || t.shielded || t.inv > 0) return;
     let raw = src.atk * mult * attrMult(src.attr, t.attr); const crit = forceCrit || Math.random() < src.crit; if (crit) raw *= src.critDmg;
     const d = raw * raw / (raw + t.def); // DEF: damage = raw * raw / (raw + DEF)
     t.hp -= d; if (t.idle) this.wake(t);
     if (t.side === 0) this.num(t, d, 2);
     else if (crit || t.boss || t.portal || Math.random() < 0.6) this.num(t, d, crit ? 1 : 0);
     if (t.hp <= 0) {
-      t.dead = true;
+      t.dead = true; this.defeatFx(t);
+      if (t.hero) this.fallen.push({ hero: t.hero, x: t.x, y: t.y + t.r, t: RESPAWN });
       if (t.side === 1) this.drops.push({ x: t.x, y: t.y, v: this.gs * (t.portal ? 40 : t.boss ? 40 : 1), t: 0 });
       if (t.boss) this.portal.shielded = false;
       if (t.portal) { S.stage++; S.best = Math.max(S.best, S.stage); this.nextAt = this.clock + 0.7; }
@@ -185,6 +211,8 @@ export class Battle extends Phaser.Scene {
   }
   step(dt) {
     this.clock = (this.clock || 0) + dt;
+    for (const f of this.fallen) if ((f.t -= dt) <= 0) this.respawn(f);
+    if (this.fallen.length) this.fallen = this.fallen.filter(f => f.t > 0);
     if (this.nextAt && this.clock > this.nextAt) { this.nextAt = 0; this.startStage(this.portal.x + 260); }
     const allies = [], foes = [];
     for (const u of this.units) if (!u.dead) (u.side === 0 ? allies : foes).push(u);
@@ -198,6 +226,7 @@ export class Battle extends Phaser.Scene {
     for (const u of this.units) {
       if (u.dead || u.portal) continue;
       if (u.idle) { if (front > u.x - 380) this.wake(u); else continue; }
+      if (u.inv > 0) u.inv -= dt;
       if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (!u.sprite || u.anim > atkLen(u.sprite)) u.anim = null; }
       u.moving = false;
       if (u.stun > 0) { u.stun -= dt; continue; }
@@ -260,10 +289,10 @@ export class Battle extends Phaser.Scene {
         const bob = u.moving && u.anim == null && !sp.artBob ? -Math.abs(Math.sin(Math.PI * 2 * ((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase))) * 2 * sp.scale * u.ss : 0;
         const spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, sp.key, 0)); si++;
         if (spr.texture.key !== sp.key) spr.setTexture(sp.key);
-        spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
+        spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setRotation(0).setDepth(6 + u.y / 1000).setVisible(true)
           .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + bob + (u.hero && an.idle.length === 1 && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
         if (lunge && lp > 0.8) spr.setTintFill(0xffffff); else if (u.tint) spr.setTint(u.tint); else spr.clearTint();
-        if (u.idle) spr.setAlpha(0.85); else spr.setAlpha(1);
+        u.fr = fr; spr.setAlpha(u.idle ? 0.85 : u.inv > 0 ? (Math.floor(tt * 16) % 2 ? 0.35 : 1) : 1);
         g.fillStyle(0x000000, 0.35).fillEllipse(u.x, feet, u.hero ? 44 : u.r * 2.4, 9);
         const top = feet - sp.fh * sc * sp.oy - 4;
         if (u.hero) { this.bar(g, u.x, top - 6, 50, u.hp / u.max, 0x66ff66); const cd = Math.max(3, 7 - 0.3 * S.abilLv[u.hero.id]); this.bar(g, u.x, top, 50, 1 - Math.max(0, u.abilCd) / cd, 0x6fb6ff); }
@@ -279,10 +308,31 @@ export class Battle extends Phaser.Scene {
         this.bar(g, u.x, u.y - u.r - 30, 100, u.hp / u.max, 0xff4444);
       } else this.drawEnemy(g, u);
     }
-    for (; si < this.spool.length; si++) this.spool[si].setVisible(false);
+    // dying units: white flash, knock-back tilt/fall, fade
+    for (const d of this.dfx) {
+      d.t += dt; const k = Math.min(1, d.t / d.dur), spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, d.sp.key, 0)); si++;
+      if (spr.texture.key !== d.sp.key) spr.setTexture(d.sp.key);
+      const tilt = d.hero ? k * 1.45 : Math.min(1, k * 2) * 0.9, kb = d.hero ? 0 : 14 * Math.min(1, k * 3);
+      spr.setFrame(d.fr).setOrigin(d.sp.ox, d.sp.oy).setScale(d.sc).setFlipX(d.flip).setVisible(true).setDepth(5.5)
+        .setPosition(Math.round(d.x + d.dir * kb), Math.round(d.y)).setRotation(d.dir * -tilt * (d.flip ? -1 : 1)).setAlpha(d.hero ? (k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4) : 1 - k * k);
+      if (d.t < 0.08) spr.setTintFill(0xffffff); else if (d.tint) spr.setTint(d.tint); else spr.clearTint();
+    }
+    if (this.dfx.length) this.dfx = this.dfx.filter(d => d.t < d.dur);
+    for (; si < this.spool.length; si++) this.spool[si].setVisible(false).setRotation(0);
+    // particles: dust / smoke / soul wisps
+    for (const q of this.parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (!q.wisp) { q.vy += 60 * dt; q.vx *= 0.96; } this.fx.fillStyle(q.c, Math.min(1, q.life * 2)).fillRect(Math.round(q.x), Math.round(q.y), q.sz, q.sz); }
+    if (this.parts.length) this.parts = this.parts.filter(q => q.life > 0);
+    // fallen heroes: grey tombstone + respawn countdown
+    this.markTxt.forEach(t => t.setVisible(false));
+    this.fallen.forEach((f, i) => {
+      const x = Math.round(f.x), y = Math.round(f.y);
+      g.fillStyle(0x000000, 0.35).fillEllipse(x, y, 30, 7); g.fillStyle(0x3a3a44).fillRect(x - 10, y - 26, 20, 26).fillCircle(x, y - 26, 10);
+      g.fillStyle(0x8a8a96).fillRect(x - 8, y - 24, 16, 23).fillCircle(x, y - 26, 8); g.fillStyle(0x5a5a66).fillRect(x - 1, y - 30, 2, 14).fillRect(x - 5, y - 26, 10, 2);
+      const t = this.markTxt[i]; if (t) t.setText(`${f.hero.name.split(' ').slice(-1)[0]} ${Math.ceil(f.t)}s`).setPosition(x, y - 46).setVisible(true);
+    });
     for (const s of this.shots) { s.t -= dt; this.fx.lineStyle(2, s.c, 0.85).lineBetween(s.x1, s.y1, s.x2, s.y2); }
     this.shots = this.shots.filter(s => s.t > 0);
-    for (const f of this.fxs) { f.t -= dt; if (f.rect) this.fx.fillStyle(f.c, 0.35).fillRect(f.x, f.y - 70, f.r, 110); else this.fx.fillStyle(f.c, 0.18).fillCircle(f.x, f.y, f.r * (1.2 - f.t)); }
+    for (const f of this.fxs) { f.t -= dt; if (f.pillar) { this.fx.fillStyle(f.c, Math.min(0.7, f.t * 1.6)).fillRect(f.x - f.r / 2, f.y - 170, f.r, 170); this.fx.fillStyle(0xffffff, Math.min(0.8, f.t * 2)).fillRect(f.x - f.r / 6, f.y - 170, f.r / 3, 170); } else if (f.rect) this.fx.fillStyle(f.c, 0.35).fillRect(f.x, f.y - 70, f.r, 110); else this.fx.fillStyle(f.c, 0.18).fillCircle(f.x, f.y, f.r * (1.2 - f.t)); }
     this.fxs = this.fxs.filter(f => f.t > 0);
     for (const d of this.drops) this.fx.fillStyle(0xffd700).fillCircle(d.x, d.y - d.t * 60, 6).lineStyle(1, 0x7a5a00).strokeCircle(d.x, d.y - d.t * 60, 6);
     const p = this.portal, lead = Math.max(this.stageX, ...this.units.filter(u => u.hero).map(u => u.x)), foes = this.units.filter(u => u.side === 1 && !u.portal).length;
