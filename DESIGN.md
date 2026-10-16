@@ -199,7 +199,14 @@ Franklin generated the sheets. `tools/make_sprites_gen2.py` and `tools/make_scen
 - **Warchief and Rift:** a big burst with screen shake.
 
 **Respawn:**
-- A fallen hero returns after 15 s at the back of the formation, with a pillar of light and 1 s of invulnerability (blinking).
+- A fallen hero returns after 30 s at the camp banner (stage start), then walks up to rejoin; originally this was 15 s at the back of the formation, with a pillar of light and 1 s of invulnerability (blinking).
 - Hero cards grey out the portrait and show the countdown.
 - The stage restarts only when every hero is down at once.
 - Timers run in `step()`, so the 30-minute sim honours respawn. A fresh-game sim now reaches stage 26, up from 20.
+
+## M1.14 — Respawn at camp
+
+- **Timer:** 30 s.
+- **Respawn point:** the camp banner at the start of the stage, marked by the light pillar. The hero gets 1 s of invulnerability, then walks forward to rejoin.
+- **Camera:** smoothly follows the most forward living hero, so heroes walking up from camp never pull it back.
+- **Spawn camping:** no goblins are pre-placed within 450 px of the camp, so it can't be camped.

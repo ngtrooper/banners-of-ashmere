@@ -5,7 +5,7 @@ export const W = 960, H = 440, GROUND = 400;
 const stretch = () => Math.min(2000, 1100 + S.stage * 45); // short early stages, longer later
 const RANGED = new Set(['archer', 'mage', 'cleric']);
 const LANE = { knight: -50, rogue: -22, archer: -88, mage: -72, cleric: -38 }; // all feet land on the ground strip (y 296..440)
-const RESPAWN = 15; // seconds until a fallen hero returns
+const RESPAWN = 30; // seconds until a fallen hero returns
 const PARALLAX = { far: 0.15, near: 0.45, ground: 1 };
 const ENEMY_LIST = Object.values(ENEMIES);
 // attack timeline: cumulative end time of each attack frame (per-frame durations when given)
@@ -59,7 +59,7 @@ export class Battle extends Phaser.Scene {
   }
   respawn(f) {
     const live = this.units.filter(u => u.hero && !u.dead); if (!live.length) return;   // full wipe: the stage restart handles it
-    const back = Math.min(...live.map(u => u.x)), u = this.spawnHero(f.hero, back + CLASSES[f.hero.cls].form - 50);
+    const u = this.spawnHero(f.hero, this.stageX + 70 + CLASSES[f.hero.cls].form); // back at the camp, then walks up to rejoin
     u.inv = 1; u.abilCd = 2;
     if (!this.sim) { this.fxs.push({ pillar: true, x: u.x, y: u.y + u.r, r: 34, c: 0xfff3b0, t: 0.6 }); this.puff(u.x, u.y + u.r - 40, 14, 0xfff3b0, 90, -60); }
   }
@@ -322,6 +322,10 @@ export class Battle extends Phaser.Scene {
     // particles: dust / smoke / soul wisps
     for (const q of this.parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (!q.wisp) { q.vy += 60 * dt; q.vx *= 0.96; } this.fx.fillStyle(q.c, Math.min(1, q.life * 2)).fillRect(Math.round(q.x), Math.round(q.y), q.sz, q.sz); }
     if (this.parts.length) this.parts = this.parts.filter(q => q.life > 0);
+    { const bx = this.stageX + 40, by = GROUND + 30; // camp banner (respawn point)
+      g.fillStyle(0x000000, 0.35).fillEllipse(bx + 14, by, 60, 9); g.fillStyle(0x6b4a2a).fillTriangle(bx - 10, by, bx + 14, by - 30, bx + 38, by);
+      g.fillStyle(0x3a2814).fillTriangle(bx + 6, by, bx + 14, by - 18, bx + 22, by); g.fillStyle(0x4a3a2a).fillRect(bx - 22, by - 78, 3, 78);
+      const wv = Math.sin(tt * 3) * 2; g.fillStyle(0x2f4fa0).fillRect(bx - 19, by - 76, 24, 16); g.fillTriangle(bx - 19, by - 60, bx + 5, by - 60, bx - 7 + wv, by - 52); g.fillStyle(0xe9c46a).fillRect(bx - 11, by - 72, 8, 8); }
     // fallen heroes: grey tombstone + respawn countdown
     this.markTxt.forEach(t => t.setVisible(false));
     this.fallen.forEach((f, i) => {
