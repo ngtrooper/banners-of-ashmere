@@ -125,3 +125,16 @@ Assets:
   - Regular goblins are ~62% of hero height and the Brute ~75%. The Warchief is a Brute at 1.25×.
   - Goblins have no attack frames yet. They attack with a lunge/squash tween and a white flash.
   - Hexer and Mender projectiles are purple and green.
+
+## M1.9 — Test tools and smaller goblins
+
+**Test tab** (developer helpers):
+- **Reset** asks for confirmation, then replaces the save with a fresh one at stage 1.
+- **Sim 30 min** fast-forwards 1800 s of the real battle logic with no rendering (`Battle.step` at a fixed 1/30 s timestep).
+  - It runs in ~25 ms chunks through `setTimeout`, so the tab stays responsive.
+  - Every simulated second it auto-buys the cheapest affordable upgrade (train, ability rank or recruit).
+  - A popup then shows stages gained, gold earned and spent, purchases, and levels and ranks gained.
+
+**Goblins at half size:** the sprites draw at 0.5 scale, which is exactly native resolution of the ×2 sheets, so no pixels are lost.
+- Regular goblins are ~31% of hero height and the Brute ~37%. The Warchief is the Brute at 1.25×.
+- Hitbox radii are halved. HP bars and damage numbers follow the scaled art.

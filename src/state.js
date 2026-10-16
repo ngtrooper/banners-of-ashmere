@@ -1,6 +1,6 @@
 import { HEROES, CLASS_STATS, statsAt } from './data.js';
 export const SAVE = 'ashmere-save-v1';
-const fresh = () => ({ v: 3, gold: 50, stage: 1, best: 1, oaths: 0, speed: 1, heroLv: {}, abilLv: {}, unlocked: { aldric: true, sylwen: true, maera: true } });
+const fresh = () => ({ v: 4, gold: 50, stage: 1, best: 1, oaths: 0, speed: 1, heroLv: {}, abilLv: {}, unlocked: { aldric: true, sylwen: true, maera: true } });
 export const S = (() => {
   let s = fresh();
   try { const o = JSON.parse(localStorage.getItem(SAVE)); if (o) s = { ...s, ...o, unlocked: { ...s.unlocked, ...(o.unlocked || {}) } }; } catch { /* corrupt save: start fresh */ }
@@ -24,4 +24,5 @@ export function heroStats(h, lvOverride) {
 export const enemyStats = (t, stage = S.stage) => statsAt(t.stats, stage);
 export const fmt1 = n => n < 100 ? (Math.round(n * 10) / 10).toFixed(1) : fmt(n);
 export const oathGain = () => Math.max(0, Math.floor((S.best - 20) / 5));
+export function resetAll() { resetting = true; localStorage.setItem(SAVE, JSON.stringify(fresh())); location.reload(); }
 export function prestige() { const g = oathGain(); if (g < 1) return; const n = fresh(); n.oaths = S.oaths + g; resetting = true; localStorage.setItem(SAVE, JSON.stringify(n)); location.reload(); }

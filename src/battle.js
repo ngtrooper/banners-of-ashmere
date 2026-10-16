@@ -69,9 +69,9 @@ export class Battle extends Phaser.Scene {
     const type = boss ? ENEMIES.brute : this.pickType(), st = enemyStats(type), reg = REGIONS[region()];
     const attr = boss || Math.random() < 0.6 ? reg.attr : ATTR_KEYS[Math.floor(Math.random() * 5)];
     const m = boss ? BOSS : { hp: 1, atk: 1, def: 1 }, hp = st.hp * m.hp * (0.9 + Math.random() * 0.2);
-    return this.get({ side: 1, etype: type, cls: type.cls, attr, boss: !!boss, idle, x, y: boss ? GROUND - 70 : GROUND - 15 - Math.random() * 135, hp, max: hp,
+    return this.get({ side: 1, etype: type, cls: type.cls, attr, boss: !!boss, idle, x, y: boss ? GROUND - 40 : GROUND - 15 - Math.random() * 135, hp, max: hp,
       atk: st.atk * m.atk, def: st.def * m.def, aspd: st.aspd, move: st.move * (0.9 + Math.random() * 0.2), range: boss ? 60 : st.range, crit: st.crit, critDmg: st.critDmg,
-      splash: type.splash || 0, heal: type.heal || 0, r: boss ? 34 : type.r, color: ATTRS[attr].color,
+      splash: type.splash || 0, heal: type.heal || 0, r: boss ? 14 : type.r, color: ATTRS[attr].color,
       sprite: type.sprite && this.okSprite[type.sprite.key] ? type.sprite : null, ss: boss ? BOSS.scale : 1, tint: boss ? 0xffb0a0 : 0 });
   }
   // top of a unit's art (above its HP bar), so floating numbers never cover the character
@@ -80,6 +80,7 @@ export class Battle extends Phaser.Scene {
     if (u.hero) return u.y - 44; if (u.portal) return u.y - 104; if (u.boss) return u.y - u.r - 40; return u.y - u.r - 16;
   }
   num(u, v, kind) { // 0 hero dmg, 1 crit, 2 hero hurt, 3 heal
+    if (this.sim) return;
     const t = this.nums[this.numIdx = (this.numIdx + 1) % this.nums.length], side = Math.random() < 0.5 ? -1 : 1;
     const hurt = kind === 2, x = u.x + (hurt ? side * (26 + Math.random() * 14) : (Math.random() - 0.5) * 20);
     t.setText((kind === 3 ? '+' : '') + (v < 10 ? v.toFixed(1) : fmt(v)) + (kind === 1 ? '!' : '')).setPosition(x, this.headY(u) - (hurt ? 4 : 0)).setVisible(true).setAlpha(1)
@@ -98,7 +99,7 @@ export class Battle extends Phaser.Scene {
       t.dead = true;
       if (t.side === 1) this.drops.push({ x: t.x, y: t.y, v: this.gs * (t.portal ? 40 : t.boss ? 40 : 1), t: 0 });
       if (t.boss) this.portal.shielded = false;
-      if (t.portal) { S.stage++; S.best = Math.max(S.best, S.stage); this.nextAt = this.time.now + 700; }
+      if (t.portal) { S.stage++; S.best = Math.max(S.best, S.stage); this.nextAt = this.clock + 0.7; }
     }
   }
   healUnit(t, amt) { const a = Math.min(amt, t.max - t.hp); if (a <= 0) return; t.hp += a; if (t.side === 0 || Math.random() < 0.3) this.num(t, a, 3); }
@@ -126,7 +127,7 @@ export class Battle extends Phaser.Scene {
     this.deal(u, t, 1);
     if (u.cls === 'knight') { let n = u.boss ? 2 : u.side === 0 ? 3 : 1; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < 60 && Math.abs(o.y - t.y) < 70) { this.deal(u, o, 1); n--; } } }
     else if (u.cls === 'mage') { let n = 10; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < u.splash && Math.abs(o.y - t.y) < u.splash) { this.deal(u, o, 0.6); n--; } } this.blast(t.x, t.y, u.splash, u.color); this.beam(u, t, u.color); }
-    else if (u.range > 60) { const sp = u.sprite; if (sp && sp.shotColor) this.shots.push({ x1: u.x + (u.side ? -20 : 24), y1: u.y + u.r - sp.shotY, x2: t.x, y2: t.y, t: 0.15, c: sp.shotColor }); else this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090); }
+    else if (u.range > 60) { const sp = u.sprite; if (sp && sp.shotColor) this.shots.push({ x1: u.x + (u.side ? -20 : 24), y1: u.y + u.r - sp.shotY * sp.scale * u.ss, x2: t.x, y2: t.y, t: 0.15, c: sp.shotColor }); else this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090); }
   }
   move(u, dir, dt) {
     let nx = u.x + dir * u.move * dt;
@@ -145,8 +146,34 @@ export class Battle extends Phaser.Scene {
     return false;
   }
   update(_, ms) {
+    if (this.sim) return; // headless fast-forward in progress
     const dt = Math.min(ms, 50) / 1000 * (S.speed || 1);
-    if (this.nextAt && this.time.now > this.nextAt) { this.nextAt = 0; this.startStage(this.portal.x + 260); }
+    this.step(dt);
+    for (const t of this.nums) if (t.visible) { t.life -= dt; t.x += t.vx * dt; t.y += t.vy * dt; t.setAlpha(Math.min(1, t.life * 2)); if (t.life <= 0) t.setVisible(false); }
+    this.draw(dt);
+  }
+  // fast-forward the real battle logic with a fixed timestep and no rendering, chunked so the tab stays responsive
+  simulate(seconds, autoBuy, onProgress) {
+    return new Promise(done => {
+      const DT = 1 / 30, t0 = performance.now(); let t = 0, nextBuy = 0;
+      this.sim = true; this.earned = 0;
+      for (const n of this.nums) n.setVisible(false);
+      const chunk = () => {
+        const end = performance.now() + 25;
+        while (t < seconds && performance.now() < end) {
+          for (let i = 0; i < 30 && t < seconds; i++) { this.step(DT); t += DT; if (t >= nextBuy) { autoBuy(); nextBuy = t + 1; } }
+          this.shots.length = 0; this.fxs.length = 0;
+        }
+        onProgress && onProgress(t / seconds);
+        if (t < seconds) setTimeout(chunk, 0);
+        else { this.sim = false; done({ ms: performance.now() - t0 }); }
+      };
+      chunk();
+    });
+  }
+  step(dt) {
+    this.clock = (this.clock || 0) + dt;
+    if (this.nextAt && this.clock > this.nextAt) { this.nextAt = 0; this.startStage(this.portal.x + 260); }
     const allies = [], foes = [];
     for (const u of this.units) if (!u.dead) (u.side === 0 ? allies : foes).push(u);
     let front = -1e9; this.knight = null;
@@ -176,11 +203,9 @@ export class Battle extends Phaser.Scene {
     if (allies.length) { const tx = Math.min(Math.max(front - W * 0.5, this.stageX), p.x + 220 - W * 0.8); this.camX += (tx - this.camX) * Math.min(1, dt * 2); }
     if (!allies.length && !this.nextAt) this.startStage(this.stageX); // wipe: retry stage
     this.cameras.main.scrollX = this.camX;
-    for (const d of this.drops) { d.t += dt; if (d.t > 0.5) { S.gold += d.v; d.done = true; } }
+    for (const d of this.drops) { d.t += dt; if (d.t > 0.5) { S.gold += d.v; this.earned = (this.earned || 0) + d.v; d.done = true; } }
     this.drops = this.drops.filter(d => !d.done);
-    for (const t of this.nums) if (t.visible) { t.life -= dt; t.x += t.vx * dt; t.y += t.vy * dt; t.setAlpha(Math.min(1, t.life * 2)); if (t.life <= 0) t.setVisible(false); }
     this.units = this.units.filter(u => { if (u.dead) { this.pool.push(u); return false; } return true; });
-    this.draw(dt);
   }
   bar(g, x, y, w, frac, col) { g.fillStyle(0x000000, 0.75).fillRect(x - w / 2 - 1, y - 1, w + 2, 5); g.fillStyle(col).fillRect(x - w / 2, y, w * Math.max(0, frac), 3); }
   drawEnemy(g, u) {

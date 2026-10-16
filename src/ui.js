@@ -1,5 +1,5 @@
 import { HEROES, CLASSES, ATTRS, ADV, ENEMIES, REGIONS, BOSS, ATTR_ENABLED, CLASS_STATS, STAT_KEYS, STAT_NAMES } from './data.js';
-import { S, save, fmt, fmt1, heroStats, heroCost, abilCost, enemyStats, oathGain, prestige, region, oathMult } from './state.js';
+import { S, save, fmt, fmt1, heroStats, heroCost, abilCost, enemyStats, oathGain, prestige, resetAll, region, oathMult } from './state.js';
 const $ = s => document.querySelector(s);
 const sc = () => window.__scene;
 const pct = v => Math.round(v * 100) + '%';
@@ -97,12 +97,56 @@ function renderBanners() {
     <button class="btn gold" id="do-prestige" ${g < 1 ? 'disabled' : ''}>Raise the Banners<small>+${g} Oathmarks</small></button></div></div>`;
   $('#do-prestige').onclick = () => { if (confirm(`Reset your march for ${g} Oathmarks?`)) prestige(); };
 }
+// cheapest affordable purchase (train / rank / recruit), used by the 30-minute simulator
+function cheapest() {
+  let best = null;
+  for (const h of HEROES) {
+    if (!S.unlocked[h.id]) { if (!best || h.unlock < best.c) best = { c: h.unlock, f: () => { S.unlocked[h.id] = true; sc().addHero(h.id); } }; continue; }
+    const t = heroCost(h.id), a = abilCost(h.id);
+    if (!best || t < best.c) best = { c: t, f: () => { S.heroLv[h.id]++; sc().refreshHero(h.id); } };
+    if (a < best.c) best = { c: a, f: () => { S.abilLv[h.id]++; } };
+  }
+  return best;
+}
+function renderTest() {
+  $('#tab-test').innerHTML = `<div class="codex"><div class="box"><h3>Test Tools</h3>
+    <p class="dim">Developer helpers for balancing. Not part of normal play.</p>
+    <div class="actions" style="display:flex;gap:8px;max-width:520px">
+      <button class="btn gold" id="do-sim" title="Fast-forwards 30 minutes of the real battle logic headlessly (fixed 1/30 s timestep, no rendering) and auto-buys the cheapest upgrade (train, ability rank or recruit) every simulated second, so the result reflects real progress.">Sim 30 min<small>fast-forward + auto-buy</small></button>
+      <button class="btn" id="do-reset" title="Wipe all progress and start again at stage 1 with a fresh save">Reset<small>fresh save · stage 1</small></button></div>
+    <p id="sim-status" class="dim"></p></div></div>`;
+  $('#do-reset').onclick = () => { if (confirm('Reset ALL progress back to stage 1 with a fresh save? This cannot be undone.')) resetAll(); };
+  $('#do-sim').onclick = runSim;
+}
+let simming = false;
+async function runSim() {
+  if (simming) return; simming = true;
+  const btn = $('#do-sim'), st = $('#sim-status'); btn.disabled = true;
+  const before = { stage: S.stage, best: S.best, gold: S.gold, lv: Object.values(S.heroLv).reduce((a, b) => a + b, 0), rk: Object.values(S.abilLv).reduce((a, b) => a + b, 0), heroes: Object.values(S.unlocked).filter(Boolean).length };
+  let spent = 0, buys = 0;
+  const autoBuy = () => { for (let i = 0; i < 20; i++) { const b = cheapest(); if (!b || S.gold < b.c) return; S.gold -= b.c; spent += b.c; buys++; b.f(); } };
+  const r = await sc().simulate(1800, autoBuy, p => { st.textContent = `Simulating… ${Math.round(p * 100)}%`; });
+  save(); buildHeroes(); update(); btn.disabled = false; simming = false; st.textContent = '';
+  const lv = Object.values(S.heroLv).reduce((a, b) => a + b, 0), rk = Object.values(S.abilLv).reduce((a, b) => a + b, 0), heroes = Object.values(S.unlocked).filter(Boolean).length;
+  const sum = { stagesGained: S.stage - before.stage, stage: S.stage, best: S.best, earned: Math.round(sc().earned), spent: Math.round(spent), buys, levelsGained: lv - before.lv, ranksGained: rk - before.rk, recruited: heroes - before.heroes, seconds: +(r.ms / 1000).toFixed(1) };
+  window.__simResult = sum;
+  $('#sheet-body').innerHTML = `<h2>30 minutes simulated</h2><div class="stats">
+    <div class="row"><span>Stage</span><b>${before.stage} → ${S.stage}</b><em>+${sum.stagesGained}</em></div>
+    <div class="row"><span>Gold earned</span><b>${fmt(sum.earned)}</b><em></em></div>
+    <div class="row"><span>Gold spent</span><b>${fmt(sum.spent)}</b><em>${buys} purchases</em></div>
+    <div class="row"><span>Hero levels gained</span><b>+${sum.levelsGained}</b><em></em></div>
+    <div class="row"><span>Ability ranks gained</span><b>+${sum.ranksGained}</b><em></em></div>
+    <div class="row"><span>Heroes recruited</span><b>+${sum.recruited}</b><em></em></div>
+    <div class="row"><span>Levels now</span><b>${HEROES.filter(h => S.unlocked[h.id]).map(h => h.name.split(' ').slice(-1)[0] + ' ' + S.heroLv[h.id]).join(' · ')}</b><em></em></div>
+    <p class="dim">Computed in ${sum.seconds} s of real time.</p></div>`;
+  sheetId = null; $('#modal').classList.remove('hidden'); $('#modal').classList.add('simsum');
+}
 let last = 0;
 function update() {
   $('#r-gold').textContent = fmt(S.gold); $('#r-oath').textContent = S.oaths; $('#r-stage').textContent = `${S.stage}`; $('#r-best').textContent = S.best;
   $('#r-region').textContent = REGIONS[region()].name; $('#speed').textContent = (S.speed || 1) + '×';
   updateHeroes(); if (sheetId) renderSheet();
-  const now = Date.now(); if (now - last > 1000) { last = now; if (tab === 'codex') renderCodex(); if (tab === 'banners') renderBanners(); }
+  const now = Date.now(); if (now - last > 1000) { last = now; if (tab === 'codex') renderCodex(); if (tab === 'banners') renderBanners(); if (tab === 'test' && !$('#do-sim')) renderTest(); }
 }
 export function initUI() {
   document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
