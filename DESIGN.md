@@ -152,3 +152,28 @@ Assets:
   - region parallax backgrounds
 
   The altar effect is CSS-only for now.
+
+## M1.11 — Generated art pass 2
+
+Franklin generated the sheets. `tools/make_sprites_gen2.py` and `tools/make_scenes_gen2.py` process them; the source JPGs stay local in `/workspace/src2`.
+
+**Frame splitting:**
+- Each row is split by column seams. Blobs that cross a seam are cut there, and the pieces go to the frame on the left, because effects trail to the right.
+- Small stray specks near the feet line are removed.
+- Every frame was checked by eye.
+
+**Sprite sheets:**
+- `aldric_v5`: original idle and attack, plus an 8-frame walk.
+- `sylwen_v5`: idle and attack, plus an 8-frame walk.
+- `kael_v1`: idle ×5, walk ×8, attack ×6 (violet slash).
+- `isolde_v1`: idle ×4, walk ×8, cast ×6 (blue glow).
+- `goblin_*_v3`: the 6-frame walk (the new goblin walk sheet still had 6 frames per row, so the old walk is kept) plus a 6-frame attack, which replaces the lunge tween.
+- Hit frames: Brute 4, Sneak 4, Slinger 4, Hexer 3, Mender 4.
+- Heroes with several idle frames loop them.
+
+**Summoning Altar:** the generated altar scene, with the 8-frame burst played over the rune circle (screen blend). The hero's idle sprite is revealed at the brightest burst frame.
+
+**Backgrounds:**
+- Each region panorama is split into far, near and ground bands. They're mirror-tiled horizontally and scroll at 0.15, 0.45 and 1.0 of camera speed.
+- The ground strip covers y 296–440. Hero lanes and goblin spawn heights are compressed so every unit's feet land on it.
+- Dawnspire Ruins (region 5) reuses Greenvale until it gets its own art.

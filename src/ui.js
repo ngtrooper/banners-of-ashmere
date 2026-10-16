@@ -19,24 +19,27 @@ function buy(cost, fn) { if (S.gold < cost) return; S.gold -= cost; fn(); save()
 function train(id) { buy(heroCost(id), () => { S.heroLv[id]++; sc().refreshHero(id); }); }
 function rankUp(id) { buy(abilCost(id), () => { S.abilLv[id]++; }); }
 function recruit(id) { const h = HEROES.find(x => x.id === id); if (S.gold < h.unlock) return; summon(h); }
-// Summoning Altar: rune circle charges, a pillar of light bursts, then the hero card is revealed
+// Summoning Altar: altar scene, 8-frame light burst over the rune circle, then the hero's idle sprite + card
+function heroSprite(h, cls) {
+  const sp = h.sprite; if (!sp) return `<div class="${cls} glyph-hero">${CLASSES[h.cls].icon}</div>`;
+  const n = sp.anims.idle.length, z = 1;
+  return `<div class="${cls} hero-idle" style="width:${sp.fw}px;height:${sp.fh}px;background-image:url(${sp.url});--w:${sp.fw * n}px;--n:${n};--d:${(sp.idleDur || 0.15) * n}s;--ox:${sp.ox};--oy:${sp.oy}"></div>`;
+}
 function summon(h) {
-  const m = $('#modal'), c = ATTRS[h.attr].css;
-  $('#sheet-body').innerHTML = `<div class="altar" style="--c:${c}"><h2>Summoning Altar</h2><p class="dim">Spend ${fmt(h.unlock)} gold to call a hero to your banner.</p>
-    <div class="stage-a"><div class="ring r1"></div><div class="ring r2"></div><div class="runes">${'ᚠᚢᚦᚨᚱᚲᚷᚹ'.split('').map((r, i) => `<i style="--i:${i}">${r}</i>`).join('')}</div>
-    <div class="slab"></div><div class="beam"></div><div class="flash"></div><div class="reveal">${portrait(h, true)}</div>
-    ${Array.from({ length: 18 }, (_, i) => `<b class="spark" style="--a:${i * 20}deg;--d:${(i % 3) * 0.08}s"></b>`).join('')}</div>
+  const m = $('#modal');
+  $('#sheet-body').innerHTML = `<div class="altar"><h2>Summoning Altar</h2><p class="dim">Spend ${fmt(h.unlock)} gold to call a hero to your banner.</p>
+    <div class="altar-scene" style="background-image:url(./ui/summon-altar_v1.webp)"><div class="burst" style="background-image:url(./ui/summon-burst_v1.webp)"></div>${heroSprite(h, 'reveal')}</div>
     <div class="reveal-card hidden"><h3>${h.name}</h3><div class="title">${h.title}</div><div class="badges">${badge('cls', h.cls)}${badge('attr', h.attr)}</div><p>${h.abil.name}: ${h.abil.text}</p></div>
-    <div class="sheet-actions"><button class="btn gold" id="sum-go">Summon<small>${fmt(h.unlock)} gold</small></button></div></div>`;
+    <div class="sheet-actions"><button class="btn gold" id="sum-go">✦ Summon<small>${fmt(h.unlock)} gold</small></button></div></div>`;
   sheetId = null; m.classList.remove('hidden');
   $('#sum-go').onclick = () => {
     if (S.gold < h.unlock) return; S.gold -= h.unlock; S.unlocked[h.id] = true; save();
     const alt = $('.altar'); alt.classList.add('go'); $('#sum-go').disabled = true;
-    setTimeout(() => { alt.classList.add('done'); $('.reveal-card').classList.remove('hidden'); sc().addHero(h.id); buildHeroes(); update();
-      $('.sheet-actions').innerHTML = '<button class="btn gold" id="sum-ok">To battle!</button>'; $('#sum-ok').onclick = closeSheet; }, 2200);
+    setTimeout(() => alt.classList.add('done'), 1050); // reveal at the brightest burst frame
+    setTimeout(() => { $('.reveal-card').classList.remove('hidden'); sc().addHero(h.id); buildHeroes(); update();
+      $('.sheet-actions').innerHTML = '<button class="btn gold" id="sum-ok">To battle!</button>'; $('#sum-ok').onclick = closeSheet; }, 1700);
   };
 }
-
 function buildHeroes() {
   const el = $('#tab-heroes'); el.innerHTML = '';
   for (const h of HEROES) {

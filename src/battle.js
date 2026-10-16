@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { HEROES, ENEMIES, BOSS, CLASSES, ATTRS, ATTR_KEYS, attrMult, REGIONS } from './data.js';
+import { HEROES, ENEMIES, BOSS, CLASSES, ATTRS, ATTR_KEYS, attrMult, REGIONS, BACKDROPS, REGION_BG } from './data.js';
 import { S, save, fmt, heroStats, enemyStats, oathMult, isBossStage, region } from './state.js';
 export const W = 960, H = 440, GROUND = 400;
 const stretch = () => Math.min(2000, 1100 + S.stage * 45); // short early stages, longer later
 const RANGED = new Set(['archer', 'mage', 'cleric']);
-const LANE = { knight: -80, rogue: -35, archer: -135, mage: -110, cleric: -60 };
+const LANE = { knight: -50, rogue: -22, archer: -88, mage: -72, cleric: -38 }; // all feet land on the ground strip (y 296..440)
+const PARALLAX = { far: 0.15, near: 0.45, ground: 1 };
 const ENEMY_LIST = Object.values(ENEMIES);
 // attack timeline: cumulative end time of each attack frame (per-frame durations when given)
 const cum = sp => sp._cum || (sp._cum = sp.anims.attack.reduce((a, _, i) => (a.push((a[i - 1] || 0) + ((sp.durs && sp.durs[i]) || sp.frameDur)), a), []));
@@ -15,9 +16,16 @@ const dist = u => (a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x);
 export class Battle extends Phaser.Scene {
   constructor() { super('battle'); }
   sheets() { return [...HEROES, ...Object.values(ENEMIES)].map(x => x.sprite).filter(Boolean); }
-  preload() { for (const sp of this.sheets()) this.load.spritesheet(sp.key, sp.url, { frameWidth: sp.fw, frameHeight: sp.fh }); }
+  preload() {
+    for (const sp of this.sheets()) this.load.spritesheet(sp.key, sp.url, { frameWidth: sp.fw, frameHeight: sp.fh });
+    for (const nm in BACKDROPS) for (const l in PARALLAX) this.load.image(`bg-${nm}-${l}`, `./bg/${nm}-${l}_v1.webp`);
+  }
   create() {
     this.pool = []; this.units = []; this.drops = []; this.shots = []; this.fxs = [];
+    this.layers = {};
+    for (const nm in BACKDROPS) this.layers[nm] = Object.keys(PARALLAX).map(l => { const b = BACKDROPS[nm][l], key = `bg-${nm}-${l}`;
+      if (!this.textures.exists(key) || this.textures.get(key).key === '__MISSING') return null;
+      return { l, ts: this.add.tileSprite(0, b.y, W, b.h, key).setOrigin(0, 0).setScrollFactor(0).setDepth(-10 + Object.keys(PARALLAX).indexOf(l)).setVisible(false) }; }).filter(Boolean);
     this.bg = this.add.graphics(); this.g = this.add.graphics(); this.fx = this.add.graphics().setDepth(5);
     this.nums = []; this.numIdx = 0;
     for (let i = 0; i < 80; i++) this.nums.push(this.add.text(0, 0, '', { fontFamily: 'Georgia,serif', fontSize: '14px', fontStyle: 'bold', color: '#fff', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setVisible(false).setDepth(10));
@@ -73,7 +81,7 @@ export class Battle extends Phaser.Scene {
     const type = boss ? ENEMIES.brute : this.pickType(), st = enemyStats(type), reg = REGIONS[region()];
     const attr = boss || Math.random() < 0.6 ? reg.attr : ATTR_KEYS[Math.floor(Math.random() * 5)];
     const m = boss ? BOSS : { hp: 1, atk: 1, def: 1 }, hp = st.hp * m.hp * (0.9 + Math.random() * 0.2);
-    return this.get({ side: 1, etype: type, cls: type.cls, attr, boss: !!boss, idle, x, y: boss ? GROUND - 40 : GROUND - 15 - Math.random() * 135, hp, max: hp,
+    return this.get({ side: 1, etype: type, cls: type.cls, attr, boss: !!boss, idle, x, y: boss ? GROUND - 30 : GROUND - 12 - Math.random() * 80, hp, max: hp,
       atk: st.atk * m.atk, def: st.def * m.def, aspd: st.aspd, move: st.move * (0.9 + Math.random() * 0.2), range: boss ? 60 : st.range, crit: st.crit, critDmg: st.critDmg,
       splash: type.splash || 0, heal: type.heal || 0, r: boss ? 14 : type.r, color: ATTRS[attr].color,
       sprite: type.sprite && this.okSprite[type.sprite.key] ? type.sprite : null, ss: boss ? BOSS.scale : 1, tint: boss ? 0xffb0a0 : 0 });
@@ -226,9 +234,14 @@ export class Battle extends Phaser.Scene {
   }
   draw(dt) {
     const g = this.g, bg = this.bg, cx = this.camX, reg = REGIONS[region()], tt = this.time.now / 1000; bg.clear(); g.clear(); this.fx.clear();
+    const lay = this.layers[REGION_BG[region()]];
+    for (const nm in this.layers) for (const o of this.layers[nm]) o.ts.setVisible(this.layers[nm] === lay);
+    if (lay && lay.length === 3) { for (const o of lay) o.ts.tilePositionX = Math.round(cx * PARALLAX[o.l]); }
+    else {
     bg.fillStyle(reg.sky).fillRect(cx, 0, W, H); bg.fillStyle(reg.ground).fillRect(cx, GROUND - 160, W, H);
     for (let x = Math.floor(cx * 0.5 / 180) * 180; x < cx * 0.5 + W + 180; x += 180) { const px = x + cx * 0.5; bg.fillStyle(0x000000, 0.22).fillTriangle(px, GROUND - 160, px + 80, GROUND - 230 - (x % 7) * 7, px + 160, GROUND - 160); }
     bg.fillStyle(0x000000, 0.12); for (let x = Math.floor(cx / 90) * 90; x < cx + W + 90; x += 90) bg.fillRect(x, GROUND - 40 + (x % 3) * 10, 30, 3);
+    }
     for (const h of HEROES) this.glyphs[h.id].setVisible(false);
     let si = 0;
     for (const u of this.units) {
@@ -242,13 +255,13 @@ export class Battle extends Phaser.Scene {
         const sp = u.sprite, an = sp.anims, feet = u.y + u.r, sc = sp.scale * u.ss;
         const lunge = u.anim != null && !an.attack.length, lp = lunge ? Math.sin(Math.PI * Math.min(1, u.anim / sp.atkDur)) : 0;
         const fr = lunge ? an.walk[1] : u.anim != null ? atkFrame(sp, u.anim)
-          : u.moving ? an.walk[Math.floor(((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase) * an.walk.length) % an.walk.length] : an.idle[0];
+          : u.moving ? an.walk[Math.floor(((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase) * an.walk.length) % an.walk.length] : an.idle.length > 1 ? an.idle[Math.floor(tt / (sp.idleDur || 0.15) + u.phase) % an.idle.length] : an.idle[0];
         // feet locked to ground travel (frame advances with distance, one cycle per stride); small bob twice per cycle
         const bob = u.moving && u.anim == null ? -Math.abs(Math.sin(Math.PI * 2 * ((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase))) * 2 * sp.scale * u.ss : 0;
         const spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, sp.key, 0)); si++;
         if (spr.texture.key !== sp.key) spr.setTexture(sp.key);
         spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
-          .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + bob + (u.hero && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
+          .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + bob + (u.hero && an.idle.length === 1 && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
         if (lunge && lp > 0.8) spr.setTintFill(0xffffff); else if (u.tint) spr.setTint(u.tint); else spr.clearTint();
         if (u.idle) spr.setAlpha(0.85); else spr.setAlpha(1);
         g.fillStyle(0x000000, 0.35).fillEllipse(u.x, feet, u.hero ? 44 : u.r * 2.4, 9);
