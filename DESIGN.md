@@ -138,3 +138,17 @@ Assets:
 **Goblins at half size:** the sprites draw at 0.5 scale, which is exactly native resolution of the ×2 sheets, so no pixels are lost.
 - Regular goblins are ~31% of hero height and the Brute ~37%. The Warchief is the Brute at 1.25×.
 - Hitbox radii are halved. HP bars and damage numbers follow the scaled art.
+
+## M1.10 — Animation timing and Summoning Altar (art pending)
+
+- **Walk timing:** the walk frame advances with distance travelled (one cycle per sprite `stride`), so feet don't slide at any move speed. Units bob slightly twice per cycle.
+- **Attack timing:** attacks use per-frame durations (`durs`: windup, swing, held impact, recover). The hit lands at the start of the `hit` frame.
+- **Summoning Altar:** recruiting now opens an altar scene. A rune circle charges, a pillar of light bursts with a flash and sparks, then the hero card is revealed. It works for any hero with an `unlock` cost.
+- **Art pending:** no image-generation tool was available, so these are still to come:
+  - 8-frame walk sheets
+  - goblin attack sheets
+  - altar art
+  - Kael and Isolde sprites
+  - region parallax backgrounds
+
+  The altar effect is CSS-only for now.

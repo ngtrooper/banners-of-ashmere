@@ -18,7 +18,24 @@ const power = st => st.atk * st.aspd * (1 + st.crit * (st.critDmg - 1)) * (st.sp
 function buy(cost, fn) { if (S.gold < cost) return; S.gold -= cost; fn(); save(); update(); }
 function train(id) { buy(heroCost(id), () => { S.heroLv[id]++; sc().refreshHero(id); }); }
 function rankUp(id) { buy(abilCost(id), () => { S.abilLv[id]++; }); }
-function recruit(id) { const h = HEROES.find(x => x.id === id); buy(h.unlock, () => { S.unlocked[id] = true; sc().addHero(id); buildHeroes(); }); }
+function recruit(id) { const h = HEROES.find(x => x.id === id); if (S.gold < h.unlock) return; summon(h); }
+// Summoning Altar: rune circle charges, a pillar of light bursts, then the hero card is revealed
+function summon(h) {
+  const m = $('#modal'), c = ATTRS[h.attr].css;
+  $('#sheet-body').innerHTML = `<div class="altar" style="--c:${c}"><h2>Summoning Altar</h2><p class="dim">Spend ${fmt(h.unlock)} gold to call a hero to your banner.</p>
+    <div class="stage-a"><div class="ring r1"></div><div class="ring r2"></div><div class="runes">${'ᚠᚢᚦᚨᚱᚲᚷᚹ'.split('').map((r, i) => `<i style="--i:${i}">${r}</i>`).join('')}</div>
+    <div class="slab"></div><div class="beam"></div><div class="flash"></div><div class="reveal">${portrait(h, true)}</div>
+    ${Array.from({ length: 18 }, (_, i) => `<b class="spark" style="--a:${i * 20}deg;--d:${(i % 3) * 0.08}s"></b>`).join('')}</div>
+    <div class="reveal-card hidden"><h3>${h.name}</h3><div class="title">${h.title}</div><div class="badges">${badge('cls', h.cls)}${badge('attr', h.attr)}</div><p>${h.abil.name}: ${h.abil.text}</p></div>
+    <div class="sheet-actions"><button class="btn gold" id="sum-go">Summon<small>${fmt(h.unlock)} gold</small></button></div></div>`;
+  sheetId = null; m.classList.remove('hidden');
+  $('#sum-go').onclick = () => {
+    if (S.gold < h.unlock) return; S.gold -= h.unlock; S.unlocked[h.id] = true; save();
+    const alt = $('.altar'); alt.classList.add('go'); $('#sum-go').disabled = true;
+    setTimeout(() => { alt.classList.add('done'); $('.reveal-card').classList.remove('hidden'); sc().addHero(h.id); buildHeroes(); update();
+      $('.sheet-actions').innerHTML = '<button class="btn gold" id="sum-ok">To battle!</button>'; $('#sum-ok').onclick = closeSheet; }, 2200);
+  };
+}
 
 function buildHeroes() {
   const el = $('#tab-heroes'); el.innerHTML = '';
@@ -29,7 +46,7 @@ function buildHeroes() {
       <div class="mini"><span>ATK <b class="atk"></b></span><span>HP <b class="hp"></b></span><span>PWR <b class="pwr"></b></span></div>
       <div class="hpbar"><i></i></div></div>
       <div class="actions">${S.unlocked[h.id] ? `<button class="btn gold train">Train<small></small></button><button class="btn abil">${h.abil.name}<small></small></button>`
-        : `<button class="btn gold recruit">Recruit<small>${fmt(h.unlock)} gold</small></button>`}</div>`;
+        : `<button class="btn gold recruit">✦ Summon<small>${fmt(h.unlock)} gold</small></button>`}</div>`;
     d.onclick = e => { if (!e.target.closest('button')) openSheet(h.id); };
     d.querySelector('.train')?.addEventListener('click', () => train(h.id));
     d.querySelector('.abil')?.addEventListener('click', () => rankUp(h.id));
@@ -71,10 +88,10 @@ function renderSheet() {
       ${ATTR_ENABLED ? `<h3 style="color:${a.css}">${a.icon} ${a.name}</h3><p>Deals +30% to <b>${ATTRS[ADV[h.attr]].name}</b>, and deals −20% to (takes +30% from) <b>${ATTRS[weakTo(h.attr)].name}</b>.</p>` : ''}</div></div>
     <div class="sheet-actions">${S.unlocked[h.id] ? `<button class="btn gold" id="sh-train" ${S.gold < heroCost(h.id) ? 'disabled' : ''}>Train to Lv ${lv + 1}<small>${fmt(heroCost(h.id))} gold</small></button>
       <button class="btn" id="sh-abil" ${S.gold < abilCost(h.id) ? 'disabled' : ''}>Rank up ${h.abil.name}<small>${fmt(abilCost(h.id))} gold</small></button>`
-      : `<button class="btn gold" id="sh-rec" ${S.gold < h.unlock ? 'disabled' : ''}>Recruit<small>${fmt(h.unlock)} gold</small></button>`}</div>`;
+      : `<button class="btn gold" id="sh-rec" ${S.gold < h.unlock ? 'disabled' : ''}>✦ Summon<small>${fmt(h.unlock)} gold</small></button>`}</div>`;
   $('#sh-train')?.addEventListener('click', () => { train(h.id); renderSheet(); });
   $('#sh-abil')?.addEventListener('click', () => { rankUp(h.id); renderSheet(); });
-  $('#sh-rec')?.addEventListener('click', () => { recruit(h.id); renderSheet(); });
+  $('#sh-rec')?.addEventListener('click', () => recruit(h.id));
 }
 function renderCodex() {
   const reg = REGIONS[region()];

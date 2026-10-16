@@ -48,3 +48,26 @@ h2,h3,.brand,.name,#tabs button{font-family:Georgia,"Times New Roman",serif}
 @media (max-width:640px){.codex,.cols{grid-template-columns:1fr}.brand span{display:none}}
 .portrait .art{width:100%;height:100%;object-fit:cover;border-radius:8px;image-rendering:pixelated}
 .portrait .art.smooth{image-rendering:auto}
+
+/* Summoning Altar */
+.altar{text-align:center;min-width:min(520px,86vw)}.altar h2{margin:0 0 4px}
+.stage-a{position:relative;height:280px;margin:8px auto;width:300px;overflow:hidden;border-radius:10px;background:radial-gradient(ellipse at 50% 85%,#2a1a44 0,#0c0814 70%);image-rendering:pixelated}
+.slab{position:absolute;left:50%;bottom:26px;width:200px;height:44px;transform:translateX(-50%);background:repeating-linear-gradient(90deg,#4a4258 0 12px,#3a3448 12px 24px);border:3px solid #1a1422;box-shadow:inset 0 4px #6a6078,inset 0 -6px #241e30;clip-path:polygon(8% 0,92% 0,100% 100%,0 100%)}
+.ring{position:absolute;left:50%;bottom:44px;width:220px;height:56px;transform:translateX(-50%);border:3px dashed var(--c);border-radius:50%;opacity:.55;animation:spin 6s linear infinite}
+.ring.r2{width:160px;height:40px;bottom:52px;border-style:dotted;animation-duration:4s;animation-direction:reverse}
+@keyframes spin{50%{transform:translateX(-50%) scale(1.08);opacity:.9}}
+.runes i{position:absolute;left:50%;bottom:70px;font-style:normal;color:var(--c);text-shadow:0 0 6px var(--c);transform:rotate(calc(var(--i)*45deg)) translateY(-70px) scaleY(.5);transform-origin:0 0;opacity:.4}
+.beam,.flash,.spark{position:absolute;opacity:0;pointer-events:none}
+.beam{left:50%;bottom:60px;width:60px;height:260px;transform:translateX(-50%) scaleX(.2);background:linear-gradient(transparent,#fff 30%,var(--c));filter:blur(1px)}
+.flash{inset:0;background:#fff}
+.spark{left:50%;bottom:120px;width:6px;height:6px;background:#fff;box-shadow:0 0 6px var(--c)}
+.reveal{position:absolute;left:50%;bottom:86px;transform:translateX(-50%) scale(.2);opacity:0}
+.altar.go .ring{animation-duration:.6s;opacity:1}.altar.go .runes i{opacity:1;animation:pulse .3s steps(2) infinite}
+.altar.go .beam{animation:beam 2.2s steps(22) forwards}.altar.go .flash{animation:flash 2.2s steps(22) forwards}
+.altar.go .spark{animation:spark 2.2s steps(22) forwards;animation-delay:var(--d)}
+.altar.done .reveal{opacity:1;transform:translateX(-50%) scale(1);transition:transform .35s steps(5),opacity .2s}
+@keyframes pulse{50%{opacity:.5}}
+@keyframes beam{0%,40%{opacity:0}55%{opacity:1;transform:translateX(-50%) scaleX(1.6)}80%{opacity:.8;transform:translateX(-50%) scaleX(.8)}100%{opacity:0;transform:translateX(-50%) scaleX(.1)}}
+@keyframes flash{0%,60%{opacity:0}66%{opacity:.95}100%{opacity:0}}
+@keyframes spark{0%,58%{opacity:0;transform:rotate(var(--a)) translateY(0)}64%{opacity:1}100%{opacity:0;transform:rotate(var(--a)) translateY(-130px)}}
+.reveal-card{margin:6px auto;max-width:420px}.reveal-card h3{margin:2px 0}

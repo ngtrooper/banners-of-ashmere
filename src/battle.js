@@ -6,6 +6,10 @@ const stretch = () => Math.min(2000, 1100 + S.stage * 45); // short early stages
 const RANGED = new Set(['archer', 'mage', 'cleric']);
 const LANE = { knight: -80, rogue: -35, archer: -135, mage: -110, cleric: -60 };
 const ENEMY_LIST = Object.values(ENEMIES);
+// attack timeline: cumulative end time of each attack frame (per-frame durations when given)
+const cum = sp => sp._cum || (sp._cum = sp.anims.attack.reduce((a, _, i) => (a.push((a[i - 1] || 0) + ((sp.durs && sp.durs[i]) || sp.frameDur)), a), []));
+const atkLen = sp => sp.anims.attack.length ? cum(sp)[sp.anims.attack.length - 1] : sp.atkDur;
+const atkFrame = (sp, t) => { const c = cum(sp); let i = 0; while (i < c.length - 1 && t >= c[i]) i++; return sp.anims.attack[i]; };
 const dist = u => (a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x);
 
 export class Battle extends Phaser.Scene {
@@ -132,7 +136,7 @@ export class Battle extends Phaser.Scene {
   move(u, dir, dt) {
     let nx = u.x + dir * u.move * dt;
     if (u.side === 0 && dir > 0 && this.knight && u !== this.knight && RANGED.has(u.cls)) { const lim = this.knight.x - CLASSES[u.cls].form; if (nx > lim) nx = Math.max(u.x, lim); }
-    if (nx !== u.x) u.moving = true; u.x = nx;
+    if (nx !== u.x) { u.moving = true; u.walk = (u.walk || 0) + Math.abs(nx - u.x); } u.x = nx;
   }
   ability(u, foes, allies) {
     const k = 1 + (S.abilLv[u.hero.id] - 1) * 0.35, live = foes.filter(f => !f.dead && !f.portal && !f.idle), near = r => live.filter(f => Math.abs(f.x - u.x) < r).sort(dist(u));
@@ -186,7 +190,7 @@ export class Battle extends Phaser.Scene {
     for (const u of this.units) {
       if (u.dead || u.portal) continue;
       if (u.idle) { if (front > u.x - 380) this.wake(u); else continue; }
-      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (!u.sprite || u.anim > (u.sprite.anims.attack.length ? u.sprite.anims.attack.length * u.sprite.frameDur : u.sprite.atkDur)) u.anim = null; }
+      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (!u.sprite || u.anim > atkLen(u.sprite)) u.anim = null; }
       u.moving = false;
       if (u.stun > 0) { u.stun -= dt; continue; }
       u.cd -= dt;
@@ -195,7 +199,7 @@ export class Battle extends Phaser.Scene {
       if (u.heal) { const w = this.mostWounded(u, mates, u.side === 0 ? 0.85 : 0.75); if (w) { tgt = w; healing = true; } }
       if (!tgt) tgt = u.side === 0 ? this.heroTarget(u, opp) : this.enemyTarget(u, opp);
       if (tgt) {
-        if (Math.abs(tgt.x - u.x) - u.r - tgt.r <= u.range) { if (u.cd <= 0) { u.cd = 1 / u.aspd; const sp = u.sprite; if (sp) { u.anim = 0; u.pending = { tgt, healing, opp, at: sp.anims.attack.length ? sp.hit * sp.frameDur : sp.hitAt }; } else this.attack(u, tgt, healing, opp); } }
+        if (Math.abs(tgt.x - u.x) - u.r - tgt.r <= u.range) { if (u.cd <= 0) { u.cd = 1 / u.aspd; const sp = u.sprite; if (sp) { u.anim = 0; u.pending = { tgt, healing, opp, at: sp.anims.attack.length ? (sp.hit ? cum(sp)[sp.hit - 1] : 0) : sp.hitAt }; } else this.attack(u, tgt, healing, opp); } }
         else this.move(u, Math.sign(tgt.x - u.x), dt);
       } else if (u.side === 0) this.move(u, 1, dt);
       if (u.hero && (u.abilCd -= dt) <= 0 && this.ability(u, opp, mates)) u.abilCd = Math.max(3, 7 - 0.3 * S.abilLv[u.hero.id]);
@@ -237,12 +241,14 @@ export class Battle extends Phaser.Scene {
       if (u.sprite) {
         const sp = u.sprite, an = sp.anims, feet = u.y + u.r, sc = sp.scale * u.ss;
         const lunge = u.anim != null && !an.attack.length, lp = lunge ? Math.sin(Math.PI * Math.min(1, u.anim / sp.atkDur)) : 0;
-        const fr = lunge ? an.walk[1] : u.anim != null ? an.attack[Math.min(an.attack.length - 1, Math.floor(u.anim / sp.frameDur))]
-          : u.moving ? an.walk[Math.floor(tt / 0.13 + u.phase) % an.walk.length] : an.idle[0];
+        const fr = lunge ? an.walk[1] : u.anim != null ? atkFrame(sp, u.anim)
+          : u.moving ? an.walk[Math.floor(((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase) * an.walk.length) % an.walk.length] : an.idle[0];
+        // feet locked to ground travel (frame advances with distance, one cycle per stride); small bob twice per cycle
+        const bob = u.moving && u.anim == null ? -Math.abs(Math.sin(Math.PI * 2 * ((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase))) * 2 * sp.scale * u.ss : 0;
         const spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, sp.key, 0)); si++;
         if (spr.texture.key !== sp.key) spr.setTexture(sp.key);
         spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
-          .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + (u.hero && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
+          .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + bob + (u.hero && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
         if (lunge && lp > 0.8) spr.setTintFill(0xffffff); else if (u.tint) spr.setTint(u.tint); else spr.clearTint();
         if (u.idle) spr.setAlpha(0.85); else spr.setAlpha(1);
         g.fillStyle(0x000000, 0.35).fillEllipse(u.x, feet, u.hero ? 44 : u.r * 2.4, 9);
