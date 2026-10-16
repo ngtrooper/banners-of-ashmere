@@ -37,7 +37,7 @@ export const CLASSES = {
 
 export const HEROES = [
   { id: 'aldric', name: 'Ser Aldric Vane', title: 'Shield of House Vane', cls: 'knight', attr: 'light', unlock: 0,
-    sprite: { key: 'aldric', url: './sprites/aldric_v5.png', fw: 166, fh: 182, frames: 14, scale: 1, ox: 0.446, oy: 0.984, anims: { idle: [0], walk: [6, 7, 8, 9, 10, 11, 12, 13], attack: [1, 2, 3, 4, 5] }, hit: 2, frameDur: 0.08, durs: [0.1, 0.07, 0.06, 0.12, 0.14], stride: 100 }, portrait: './sprites/aldric-portrait_v6.png',
+    sprite: { key: 'aldric', url: './sprites/aldric_v6.png', fw: 184, fh: 184, frames: 14, scale: 1, ox: 0.565, oy: 0.973, anims: { idle: [0], walk: [6, 7, 8, 9, 10, 11, 12, 13], attack: [1, 2, 3, 4, 5] }, hit: 2, frameDur: 0.08, durs: [0.1, 0.07, 0.06, 0.12, 0.14], stride: 90, artBob: true }, portrait: './sprites/aldric-portrait_v6.png',
     abil: { name: 'Bulwark Charge', text: 'Slams the 6 nearest foes for 220% ATK, knocking them back and stunning them for 1.2 s.' } },
   { id: 'kael', name: 'Kael Duskmantle', title: 'Blade of the Hollow Court', cls: 'rogue', attr: 'shadow', unlock: 120,
     sprite: { key: 'kael', url: './sprites/kael_v1.png', fw: 234, fh: 164, frames: 19, scale: 1, ox: 0.504, oy: 0.97, anims: { idle: [0, 1, 2, 3, 4], walk: [5, 6, 7, 8, 9, 10, 11, 12], attack: [13, 14, 15, 16, 17, 18] }, hit: 3, frameDur: 0.07, durs: [0.07, 0.06, 0.06, 0.08, 0.08, 0.1], idleDur: 0.16, stride: 110 }, portrait: './sprites/kael-portrait_v1.png',

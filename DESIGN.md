@@ -177,3 +177,11 @@ Franklin generated the sheets. `tools/make_sprites_gen2.py` and `tools/make_scen
 - Each region panorama is split into far, near and ground bands. They're mirror-tiled horizontally and scroll at 0.15, 0.45 and 1.0 of camera speed.
 - The ground strip covers y 296–440. Hero lanes and goblin spawn heights are compressed so every unit's feet land on it.
 - Dawnspire Ruins (region 5) reuses Greenvale until it gets its own art.
+
+## M1.12 — Aldric walk v3
+
+`aldric_v6` uses a new 8-frame walk with bigger strides and knee lifts, processed by `tools/make_aldric_walk3.py`.
+- Frames are aligned on the head centre instead of the bounding box: sideways drift is at most 2 px at 2x scale.
+- The feet share a common ground line, and the art's own up/down bob is kept, so the code bob is turned off for him (`artBob`).
+- The sequence is a clean loop: contact, down, pass, up, then the same for the other leg.
+- The stride is 90 px per cycle, so the planted foot keeps pace with the ground.

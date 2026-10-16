@@ -257,7 +257,7 @@ export class Battle extends Phaser.Scene {
         const fr = lunge ? an.walk[1] : u.anim != null ? atkFrame(sp, u.anim)
           : u.moving ? an.walk[Math.floor(((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase) * an.walk.length) % an.walk.length] : an.idle.length > 1 ? an.idle[Math.floor(tt / (sp.idleDur || 0.15) + u.phase) % an.idle.length] : an.idle[0];
         // feet locked to ground travel (frame advances with distance, one cycle per stride); small bob twice per cycle
-        const bob = u.moving && u.anim == null ? -Math.abs(Math.sin(Math.PI * 2 * ((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase))) * 2 * sp.scale * u.ss : 0;
+        const bob = u.moving && u.anim == null && !sp.artBob ? -Math.abs(Math.sin(Math.PI * 2 * ((u.walk || 0) / (sp.stride * sp.scale * u.ss) + u.phase))) * 2 * sp.scale * u.ss : 0;
         const spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, sp.key, 0)); si++;
         if (spr.texture.key !== sp.key) spr.setTexture(sp.key);
         spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
