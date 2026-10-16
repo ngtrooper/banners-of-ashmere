@@ -14,14 +14,14 @@ export const attrMult = (a, d) => ADV[a] === d ? 1.3 : ADV[d] === a ? 0.8 : 1;
 export const CLASSES = {
   knight: { name: 'Knight', icon: '♜', form: 0, desc: 'Front-line tank. Melee cleave hits up to 4 foes, and enemies near the Knight are taunted to attack it.' },
   rogue: { name: 'Rogue', icon: '†', form: 0, desc: 'Fast, high crit. Dives past the front line to pick off ranged and wounded foes.' },
-  archer: { name: 'Archer', icon: '➶', form: 170, desc: 'Long-range single-target shots from the back line.' },
-  mage: { name: 'Mage', icon: '✦', form: 120, desc: 'Ranged attacks that splash 60% damage onto nearby foes.' },
-  cleric: { name: 'Cleric', icon: '✚', form: 140, desc: 'Heals the most wounded ally, and attacks when everyone is healthy.' },
+  archer: { name: 'Archer', icon: '➶', form: 210, desc: 'Long-range single-target shots from the back line.' },
+  mage: { name: 'Mage', icon: '✦', form: 150, desc: 'Ranged attacks that splash 60% damage onto nearby foes.' },
+  cleric: { name: 'Cleric', icon: '✚', form: 175, desc: 'Heals the most wounded ally, and attacks when everyone is healthy.' },
 };
 
 export const HEROES = [
   { id: 'aldric', name: 'Ser Aldric Vane', title: 'Shield of House Vane', cls: 'knight', attr: 'light', unlock: 0,
-    sprite: { key: 'aldric', url: './sprites/aldric.png', fw: 83, fh: 86, frames: 6, scale: 1, ox: 0.437, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait.png',
+    sprite: { key: 'aldric', url: './sprites/aldric.png', fw: 178, fh: 176, frames: 6, scale: 1, ox: 0.439, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait.png',
     base: { atk: 60, hp: 2600, def: 14, aspd: 0.8, move: 80, range: 40, crit: 0.05, critDmg: 1.5 },
     abil: { name: 'Bulwark Charge', text: 'Slams the 6 nearest foes for 220% ATK, knocking them back and stunning them for 1.2 s.' } },
   { id: 'kael', name: 'Kael Duskmantle', title: 'Blade of the Hollow Court', cls: 'rogue', attr: 'shadow', unlock: 400,

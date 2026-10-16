@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy as np, os
 src=Image.open('aldric_src.jpg').convert('RGB'); a=np.asarray(src).astype(float)
 H,Wd,_=a.shape; lum=a.max(axis=2)
@@ -36,16 +36,36 @@ cw,ch=left+right,up+down; print('cell',cw,ch)
 sheet=Image.new('RGBA',(cw*6,ch))
 for i,(im,f,c) in enumerate(frames): sheet.alpha_composite(im,(i*cw+left-c,up-f))
 os.makedirs('/workspace/game/public/sprites',exist_ok=True)
-# scale: target ~ 2.2 heroes height ~ 96px for cell height of the body
-S=86/ch
-sw,sh=round(cw*S),round(ch*S)
+# v2: shrink each cell to (approximately) native pixel resolution with a box filter,
+# harden alpha, add a 1px dark outline + soft light rim, then upscale x2 nearest.
+NATIVE_H=88; UP=2
+nh=NATIVE_H; nw=round(cw*NATIVE_H/ch)+4  # +4 = room for outline
+def to_native(cell):
+    a=np.asarray(cell).astype(float)/255; al=a[...,3:4]
+    prem=Image.fromarray((np.dstack([a[...,:3]*al,al])*255).astype(np.uint8),'RGBA')
+    small=np.asarray(prem.resize((nw-4,nh),Image.BOX)).astype(float)/255
+    al=small[...,3]; rgb=small[...,:3]/np.maximum(al[...,None],1e-3)
+    lum=rgb.max(2); glow=(rgb[...,0]>0.6)&(rgb[...,0]>rgb[...,2]+0.2)
+    A=np.where(al>0.55,1.0,np.where(glow&(al>0.2),np.clip(al*1.6,0,1),0.0))
+    # darken-fringe cleanup: semi-dark edge pixels get lifted toward their neighbours' colour
+    out=np.zeros((nh,nw,4)); out[:,2:-2,:3]=np.clip(rgb,0,1); out[:,2:-2,3]=A
+    solid=out[...,3]>=0.99
+    m=Image.fromarray((solid*255).astype(np.uint8))
+    d1=np.asarray(m.filter(ImageFilter.MaxFilter(3)))>0
+    d2=np.asarray(m.filter(ImageFilter.MaxFilter(5)))>0
+    ring1=d1&~(out[...,3]>0.2); ring2=d2&~d1&~(out[...,3]>0.2)
+    out[ring1]=[0.06,0.04,0.09,1.0]           # dark outline
+    out[ring2]=[0.96,0.90,0.70,0.45]          # light rim
+    im=Image.fromarray((out*255).astype(np.uint8),'RGBA')
+    return im.resize((nw*UP,nh*UP),Image.NEAREST)
+cells=[to_native(sheet.crop((i*cw,0,(i+1)*cw,ch))) for i in range(6)]
+sw,sh=cells[0].size
 small=Image.new('RGBA',(sw*6,sh))
-for i in range(6): small.alpha_composite(sheet.crop((i*cw,0,(i+1)*cw,ch)).resize((sw,sh),Image.NEAREST),(i*sw,0))
-small.save('/workspace/game/public/sprites/aldric.png'); print('frame',sw,sh,'feet y',round(up*S))
-# portrait: head/torso of frame 1
-f1,_,c1=frames[0]; side=int(f1.height*0.5); hx=c1+int(side*0.08); sq=Image.new('RGBA',(side,side)); sq.alpha_composite(f1.crop((hx-side//2,0,hx+side//2,side)),(0,0))
-sq.resize((128,128),Image.NEAREST).save('/workspace/game/public/sprites/aldric-portrait.png')
-sheet.save('/workspace/sheet_full.png')
-bgc=Image.new('RGBA',sheet.size,(255,0,255,255)); bgc.alpha_composite(sheet); bgc.save('/workspace/sheet_check.png')
-
-print('originX',left/cw,'originY',up/ch)
+for i,c in enumerate(cells): small.alpha_composite(c,(i*sw,0))
+small.save('/workspace/game/public/sprites/aldric.png')
+print('frame',sw,sh,'originX',round((left*NATIVE_H/ch+2)/nw,3),'originY',round(up/ch,3))
+# portrait: native-res head crop of frame 1 upscaled x4 nearest
+c0=cells[0]; fx=int(sw*((left*NATIVE_H/ch+2)/nw)); side=int(sh*0.5)
+por=c0.crop((fx-side//2+int(side*0.08),0,fx+side//2+int(side*0.08),side)).resize((128,128),Image.NEAREST)
+por.save('/workspace/game/public/sprites/aldric-portrait.png')
+chk=Image.new('RGBA',small.size,(60,90,50,255)); chk.alpha_composite(small); chk.save('/workspace/aldric_check.png')

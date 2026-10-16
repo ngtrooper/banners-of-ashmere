@@ -33,7 +33,7 @@ export class Battle extends Phaser.Scene {
   }
   spawnHero(h, x) {
     const st = heroStats(h);
-    return this.get({ side: 0, hero: h, cls: h.cls, attr: h.attr, ...st, max: st.hp, x: x - CLASSES[h.cls].form, y: GROUND + LANE[h.cls], r: 22, color: ATTRS[h.attr].color });
+    return this.get({ side: 0, hero: h, cls: h.cls, attr: h.attr, ...st, max: st.hp, x: x - CLASSES[h.cls].form, y: GROUND + LANE[h.cls], r: h.sprite && h.sprite.fh > 150 ? 30 : 22, color: ATTRS[h.attr].color });
   }
   addHero(id) { const h = HEROES.find(x => x.id === id); this.spawnHero(h, this.camX + 260); }
   refreshHero(id) {
@@ -65,11 +65,17 @@ export class Battle extends Phaser.Scene {
       atk: st.atk * m.atk, def: st.def * m.def, aspd: type.aspd, move: type.move * (0.9 + Math.random() * 0.2), range: boss ? 70 : type.range, crit: type.crit, critDmg: 1.5,
       splash: type.splash || 0, heal: type.heal || 0, r: boss ? 50 : type.r, color: ATTRS[attr].color });
   }
-  num(x, y, v, kind) { // 0 hero dmg, 1 crit, 2 hero hurt, 3 heal
-    const t = this.nums[this.numIdx = (this.numIdx + 1) % this.nums.length];
-    t.setText((kind === 3 ? '+' : '') + fmt(v) + (kind === 1 ? '!' : '')).setPosition(x + (Math.random() - 0.5) * 24, y).setVisible(true).setAlpha(1)
-      .setColor(['#ffe680', '#ff9a1f', '#ff4d4d', '#6dff8a'][kind]).setFontSize(kind === 1 ? 22 : 14);
-    t.life = 0.8;
+  // top of a unit's art (above its HP bar), so floating numbers never cover the character
+  headY(u) {
+    if (u.hero && u.hero.sprite) { const sp = u.hero.sprite; return u.y + u.r - sp.fh * sp.scale * sp.oy - 18; }
+    if (u.hero) return u.y - 44; if (u.portal) return u.y - 104; if (u.boss) return u.y - u.r - 40; return u.y - u.r - 16;
+  }
+  num(u, v, kind) { // 0 hero dmg, 1 crit, 2 hero hurt, 3 heal
+    const t = this.nums[this.numIdx = (this.numIdx + 1) % this.nums.length], side = Math.random() < 0.5 ? -1 : 1;
+    const hurt = kind === 2, x = u.x + (hurt ? side * (26 + Math.random() * 14) : (Math.random() - 0.5) * 20);
+    t.setText((kind === 3 ? '+' : '') + fmt(v) + (kind === 1 ? '!' : '')).setPosition(x, this.headY(u) - (hurt ? 4 : 0)).setVisible(true).setAlpha(1)
+      .setColor(['#ffe680', '#ff9a1f', '#ff5a5a', '#6dff8a'][kind]).setFontSize(kind === 1 ? 20 : kind === 0 ? 12 : 13);
+    t.vx = hurt ? side * 38 : (Math.random() - 0.5) * 30; t.vy = -(36 + Math.random() * 14); t.life = 0.85;
   }
   wake(u) { u.idle = false; for (const o of this.units) if (o.idle && Math.abs(o.x - u.x) < 240) o.idle = false; }
   deal(src, t, mult, forceCrit) {
@@ -77,8 +83,8 @@ export class Battle extends Phaser.Scene {
     let raw = src.atk * mult * attrMult(src.attr, t.attr); const crit = forceCrit || Math.random() < src.crit; if (crit) raw *= src.critDmg;
     const d = raw * raw / (raw + t.def); // DEF: damage = raw * raw / (raw + DEF)
     t.hp -= d; if (t.idle) this.wake(t);
-    if (t.side === 0) this.num(t.x, t.y - 30, d, 2);
-    else if (crit || t.boss || t.portal || Math.random() < 0.6) this.num(t.x, t.y - t.r - 8, d, crit ? 1 : 0);
+    if (t.side === 0) this.num(t, d, 2);
+    else if (crit || t.boss || t.portal || Math.random() < 0.6) this.num(t, d, crit ? 1 : 0);
     if (t.hp <= 0) {
       t.dead = true;
       if (t.side === 1) this.drops.push({ x: t.x, y: t.y, v: this.gs * (t.portal ? 40 : t.boss ? 40 : 1), t: 0 });
@@ -86,7 +92,7 @@ export class Battle extends Phaser.Scene {
       if (t.portal) { S.stage++; S.best = Math.max(S.best, S.stage); this.nextAt = this.time.now + 700; }
     }
   }
-  healUnit(t, amt) { const a = Math.min(amt, t.max - t.hp); if (a <= 0) return; t.hp += a; if (t.side === 0 || Math.random() < 0.3) this.num(t.x, t.y - 30, a, 3); }
+  healUnit(t, amt) { const a = Math.min(amt, t.max - t.hp); if (a <= 0) return; t.hp += a; if (t.side === 0 || Math.random() < 0.3) this.num(t, a, 3); }
   beam(u, t, c) { this.shots.push({ x1: u.x, y1: u.y, x2: t.x, y2: t.y, t: 0.12, c }); }
   blast(x, y, r, c) { this.fxs.push({ x, y, r, c, t: 0.3 }); }
   heroTarget(u, foes) {
@@ -162,7 +168,7 @@ export class Battle extends Phaser.Scene {
     this.cameras.main.scrollX = this.camX;
     for (const d of this.drops) { d.t += dt; if (d.t > 0.5) { S.gold += d.v; d.done = true; } }
     this.drops = this.drops.filter(d => !d.done);
-    for (const t of this.nums) if (t.visible) { t.life -= dt; t.y -= 40 * dt; t.setAlpha(Math.min(1, t.life * 2)); if (t.life <= 0) t.setVisible(false); }
+    for (const t of this.nums) if (t.visible) { t.life -= dt; t.x += t.vx * dt; t.y += t.vy * dt; t.setAlpha(Math.min(1, t.life * 2)); if (t.life <= 0) t.setVisible(false); }
     this.units = this.units.filter(u => { if (u.dead) { this.pool.push(u); return false; } return true; });
     this.draw(dt);
   }

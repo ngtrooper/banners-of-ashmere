@@ -55,6 +55,8 @@ Every enemy uses the same stat and class rules as the heroes:
 ## Art
 - **Ser Aldric Vane** uses Franklin's pixel-art sprite: a 6-frame sheet `public/sprites/aldric.png` (83×86 cells) plus `aldric-portrait.png`, made from his source sheet by `tools/make_aldric_sprite.py`. The script splits frames with min-brightness seams, turns the dark background transparent with a soft threshold that keeps the gold glow, aligns frames to a common foot baseline and body centre, and scales with nearest-neighbour.
 - In the game: frame 1 is idle with a subtle bob. Each basic attack (and Bulwark Charge) plays frames 2–6 at 80 ms per frame, and the hit lands on frame 4 (impact). Phaser runs with `pixelArt`/`roundPixels`.
+- **Aldric v2 (clarity pass):** each full-resolution frame is box-filtered down to near-native pixel resolution (88 px tall), alpha is hardened (soft alpha kept only on the gold glow), and a 1 px dark outline plus a soft light rim are added. The result is upscaled ×2 nearest-neighbour to 178×176 cells, so he's about 140 px tall on screen. His collision radius grew to 30, and formation spacing behind the Knight is now 150/175/210 px (mage/cleric/archer).
+- **Floating numbers** spawn above each unit's art and HP bar, using the sprite height. They drift up and outward and are smaller for regular hits (12 px; crits 20 px). Damage taken by heroes peels off to the side.
 - **Sylwen Thornleaf** uses Franklin's chibi art: 5 frames (idle, draw, full draw, release with a glowing arrow, recover), made by `tools/make_sylwen_sprite.py`. The script crops inside each bordered box, which drops the border and labels. It removes the dark background by flood-filling dark regions connected to the edge plus large enclosed pockets (scipy), keeps the green glow with a soft alpha ramp, aligns frames to the feet and body centre, and resamples with Lanczos. The sheet is exported at 2× display size (118×176 cells) and shown at 0.5 scale with LINEAR texture filtering, so she stays smooth while Aldric's pixel art stays crisp under the global `pixelArt` setting. Her attack plays frames 2–5, and the green arrow fires on frame 4.
 - Every other unit still uses procedural shapes until its art arrives.
 
@@ -76,6 +78,7 @@ The look is a dark-fantasy palette (bronze and gold borders, serif headings). It
 Phaser 3 + Vite with `base: './'` for GitHub Pages. A DOM UI panel sits over the canvas, saves use localStorage (`ashmere-save-v1`), units are pooled and drawn in one Graphics pass, and everything uses procedural placeholder shapes.
 
 ## Milestones
+- M1.6 (done): Aldric clarity pass (larger, crisp integer scale, outline), damage numbers moved off the art.
 - M1.5 (done): Sylwen chibi sprite and portrait (smooth filtering), arrow synced to the release frame.
 - M1.4 (done): Ser Aldric pixel-art sprite and portrait, attack animation synced to the hit.
 - M1.3 (done): full stat system (DEF formula, attributes, crits), 5 classes with distinct behaviour and formation, 2 new heroes, 5 enemy classes, pre-placed packs, polished UI with tabs and hero stat sheet, v1/v2 save migration.
