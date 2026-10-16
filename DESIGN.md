@@ -52,6 +52,11 @@ Every enemy uses the same stat and class rules as the heroes:
 **Warlord** (every 10th stage): a Brute with 60× HP, 5× ATK and 2× DEF that wards the Rift.
 **Pre-placed packs:** enemy groups sit every 320 px along the road (3 + stage/4 per pack, maximum 10) and wake when heroes come near, so there's no empty walk. The Rift adds 2 + stage/5 more every 1–2.2 s once the heroes are within 1,100 px. At most 140 enemies are alive at once.
 
+## Art
+- **Ser Aldric Vane** uses Franklin's pixel-art sprite: a 6-frame sheet `public/sprites/aldric.png` (83×86 cells) plus `aldric-portrait.png`, made from his source sheet by `tools/make_aldric_sprite.py`. The script splits frames with min-brightness seams, turns the dark background transparent with a soft threshold that keeps the gold glow, aligns frames to a common foot baseline and body centre, and scales with nearest-neighbour.
+- In the game: frame 1 is idle with a subtle bob. Each basic attack (and Bulwark Charge) plays frames 2–6 at 80 ms per frame, and the hit lands on frame 4 (impact). Phaser runs with `pixelArt`/`roundPixels`.
+- Every other unit still uses procedural shapes until its art arrives.
+
 ## UI
 - A top resource bar shows Gold, Oathmarks, Stage/best, the region and a 1×/2× speed toggle.
 - The battlefield is framed and has its own HUD showing the region attribute, enemy level, foe count, Rift HP and distance.
@@ -70,6 +75,7 @@ The look is a dark-fantasy palette (bronze and gold borders, serif headings). It
 Phaser 3 + Vite with `base: './'` for GitHub Pages. A DOM UI panel sits over the canvas, saves use localStorage (`ashmere-save-v1`), units are pooled and drawn in one Graphics pass, and everything uses procedural placeholder shapes.
 
 ## Milestones
+- M1.4 (done): Ser Aldric pixel-art sprite and portrait, attack animation synced to the hit.
 - M1.3 (done): full stat system (DEF formula, attributes, crits), 5 classes with distinct behaviour and formation, 2 new heroes, 5 enemy classes, pre-placed packs, polished UI with tabs and hero stat sheet, v1/v2 save migration.
 - M1.2 (done): Rift stage endpoints, Warlords guarding warded Rifts, HP bars and pooled damage numbers, Drakefire nerf and ability rebalance.
 - M1.1 (done): troops removed (old saves migrated), units 2x bigger, heroes rebalanced with cleave and Ability Rank.
