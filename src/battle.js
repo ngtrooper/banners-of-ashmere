@@ -18,7 +18,7 @@ export class Battle extends Phaser.Scene {
     this.glyphs = {};
     for (const h of HEROES) this.glyphs[h.id] = this.add.text(0, 0, CLASSES[h.cls].icon, { fontFamily: 'DejaVu Sans,Segoe UI Symbol,serif', fontSize: '20px', color: '#1a1020' }).setOrigin(0.5).setDepth(6).setVisible(false);
     this.sprites = {};
-    for (const h of HEROES) if (h.sprite) this.sprites[h.id] = this.add.sprite(0, 0, h.sprite.key, 0).setOrigin(h.sprite.ox, h.sprite.oy).setDepth(6).setVisible(false);
+    for (const h of HEROES) if (h.sprite) { if (h.sprite.linear) this.textures.get(h.sprite.key).setFilter(Phaser.Textures.FilterMode.LINEAR); this.sprites[h.id] = this.add.sprite(0, 0, h.sprite.key, 0).setOrigin(h.sprite.ox, h.sprite.oy).setScale(h.sprite.scale).setDepth(6).setVisible(false); }
     this.txt = this.add.text(10, 8, '', { fontFamily: 'Georgia,serif', fontSize: '14px', color: '#f1e4c4', stroke: '#000', strokeThickness: 3, lineSpacing: 4 }).setScrollFactor(0).setDepth(11);
     this.cameras.main.setBounds(0, 0, 1e8, H);
     this.startStage(0);
@@ -111,7 +111,7 @@ export class Battle extends Phaser.Scene {
     this.deal(u, t, 1);
     if (u.cls === 'knight') { let n = u.boss ? 2 : u.side === 0 ? 3 : 1; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < 60 && Math.abs(o.y - t.y) < 70) { this.deal(u, o, 1); n--; } } }
     else if (u.cls === 'mage') { let n = 10; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < u.splash && Math.abs(o.y - t.y) < u.splash) { this.deal(u, o, 0.6); n--; } } this.blast(t.x, t.y, u.splash, u.color); this.beam(u, t, u.color); }
-    else if (u.range > 60) this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090);
+    else if (u.range > 60) { const sp = u.hero && u.hero.sprite; if (sp && sp.shotColor) this.shots.push({ x1: u.x + 18, y1: u.y + u.r - sp.shotY, x2: t.x, y2: t.y, t: 0.15, c: sp.shotColor }); else this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090); }
   }
   move(u, dir, dt) {
     let nx = u.x + dir * u.move * dt;
@@ -123,7 +123,7 @@ export class Battle extends Phaser.Scene {
     switch (u.hero.id) {
       case 'aldric': { const t = near(160).slice(0, 6); if (!t.length) return false; if (u.anim == null) u.anim = 0; t.forEach(f => { this.deal(u, f, 2.2 * k); if (!f.boss) f.x += 50; f.stun = 1.2; }); this.blast(u.x + 40, u.y, 110, 0xfff0a0); return true; }
       case 'kael': { const c = near(450); if (!c.length) return false; const t = c.sort((a, b) => (RANGED.has(b.cls) - RANGED.has(a.cls)) || b.atk - a.atk)[0]; u.x = t.x + t.r + 15; this.deal(u, t, 4 * k, true); this.blast(t.x, t.y, 40, 0xa07bff); return true; }
-      case 'sylwen': { const t = near(u.range + 40).slice(0, 10); if (!t.length) return false; t.forEach(f => { this.deal(u, f, 1.8 * k); this.shots.push({ x1: u.x, y1: u.y - 40, x2: f.x, y2: f.y, t: 0.25, c: 0x9dff9d }); }); return true; }
+      case 'sylwen': { const t = near(u.range + 40).slice(0, 10); if (!t.length) return false; if (u.anim == null) u.anim = 0; t.forEach(f => { this.deal(u, f, 1.8 * k); this.shots.push({ x1: u.x, y1: u.y - 40, x2: f.x, y2: f.y, t: 0.25, c: 0x9dff9d }); }); return true; }
       case 'maera': { const c = near(u.range + 40); if (!c.length) return false; const a = c[0]; c.filter(f => Math.abs(f.x - a.x) < 180).slice(0, 8).forEach(f => this.deal(u, f, 1.6 * k)); this.fxs.push({ rect: true, x: a.x - 30, y: a.y, r: 180, c: 0xff6a00, t: 0.4 }); return true; }
       case 'isolde': { if (!allies.some(a => a.hp / a.max < 0.9)) return false; allies.forEach(a => this.healUnit(a, a.max * 0.25 * Math.min(2, k))); this.blast(u.x, u.y, 90, 0x7dffa0); return true; }
     }
@@ -144,7 +144,7 @@ export class Battle extends Phaser.Scene {
     for (const u of this.units) {
       if (u.dead || u.portal) continue;
       if (u.idle) { if (front > u.x - 380) this.wake(u); else continue; }
-      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (u.anim > 5 * u.hero.sprite.frameDur + 0.05) u.anim = null; }
+      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (u.anim > (u.hero.sprite.frames - 1) * u.hero.sprite.frameDur + 0.05) u.anim = null; }
       if (u.stun > 0) { u.stun -= dt; continue; }
       u.cd -= dt;
       const mates = u.side === 0 ? allies : foes, opp = u.side === 0 ? foes : allies;
@@ -195,10 +195,10 @@ export class Battle extends Phaser.Scene {
       if (u.hero && u.hero.sprite) {
         const sp = u.hero.sprite, spr = this.sprites[u.hero.id], feet = u.y + u.r;
         // frames: 0 idle, 1 wind-up, 2 swing, 3 impact, 4 follow-through, 5 recover
-        const fr = u.anim == null ? 0 : Math.min(5, 1 + Math.floor(u.anim / sp.frameDur));
+        const fr = u.anim == null ? 0 : Math.min(sp.frames - 1, 1 + Math.floor(u.anim / sp.frameDur));
         g.fillStyle(0x000000, 0.35).fillEllipse(u.x, feet, 44, 10);
         spr.setFrame(fr).setPosition(Math.round(u.x), Math.round(feet + (fr === 0 ? Math.sin(tt * 3) * 1.5 : 0))).setVisible(true);
-        const top = feet - sp.fh * sp.oy - 4;
+        const top = feet - sp.fh * sp.scale * sp.oy - 4;
         this.bar(g, u.x, top - 6, 50, u.hp / u.max, 0x66ff66);
         const cd = Math.max(3, 7 - 0.3 * S.abilLv[u.hero.id]); this.bar(g, u.x, top, 50, 1 - Math.max(0, u.abilCd) / cd, 0x6fb6ff);
       } else if (u.hero) {

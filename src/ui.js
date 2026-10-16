@@ -11,7 +11,7 @@ function badge(kind, key) {
   if (kind === 'cls') { const c = CLASSES[key]; return `<span class="badge cls"><i>${c.icon}</i>${c.name}</span>`; }
   const a = ATTRS[key]; return `<span class="badge attr" style="--c:${a.css}"><i>${a.icon}</i>${a.name}</span>`;
 }
-function portrait(h, big) { const img = h.portrait ? `<img class="art" src="${h.portrait}" alt="">` : `<span class="glyph">${CLASSES[h.cls].icon}</span>`; return `<div class="portrait${big ? ' big' : ''}" style="--c:${ATTRS[h.attr].css}">${img}<span class="lv"></span></div>`; }
+function portrait(h, big) { const img = h.portrait ? `<img class="art${h.sprite && h.sprite.linear ? ' smooth' : ''}" src="${h.portrait}" alt="">` : `<span class="glyph">${CLASSES[h.cls].icon}</span>`; return `<div class="portrait${big ? ' big' : ''}" style="--c:${ATTRS[h.attr].css}">${img}<span class="lv"></span></div>`; }
 const power = st => st.atk * st.aspd * (1 + st.crit * (st.critDmg - 1)) * (st.splash ? 1.6 : 1) + st.hp * 0.05 + st.def * 2;
 
 function buy(cost, fn) { if (S.gold < cost) return; S.gold -= cost; fn(); save(); update(); }
