@@ -1,5 +1,5 @@
-import { HEROES, CLASSES, ATTRS, ADV, ENEMIES, REGIONS } from './data.js';
-import { S, save, fmt, heroStats, heroCost, abilCost, enemyStats, oathGain, prestige, region, oathMult } from './state.js';
+import { HEROES, CLASSES, ATTRS, ADV, ENEMIES, REGIONS, BOSS, ATTR_ENABLED, CLASS_STATS, STAT_KEYS, STAT_NAMES } from './data.js';
+import { S, save, fmt, fmt1, heroStats, heroCost, abilCost, enemyStats, oathGain, prestige, region, oathMult } from './state.js';
 const $ = s => document.querySelector(s);
 const sc = () => window.__scene;
 const pct = v => Math.round(v * 100) + '%';
@@ -9,10 +9,11 @@ const cards = {};
 
 function badge(kind, key) {
   if (kind === 'cls') { const c = CLASSES[key]; return `<span class="badge cls"><i>${c.icon}</i>${c.name}</span>`; }
+  if (!ATTR_ENABLED) return ''; // attributes hidden while Franklin decides
   const a = ATTRS[key]; return `<span class="badge attr" style="--c:${a.css}"><i>${a.icon}</i>${a.name}</span>`;
 }
 function portrait(h, big) { const img = h.portrait ? `<img class="art${h.sprite && h.sprite.linear ? ' smooth' : ''}" src="${h.portrait}" alt="">` : `<span class="glyph">${CLASSES[h.cls].icon}</span>`; return `<div class="portrait${big ? ' big' : ''}" style="--c:${ATTRS[h.attr].css}">${img}<span class="lv"></span></div>`; }
-const power = st => st.atk * st.aspd * (1 + st.crit * (st.critDmg - 1)) * (st.splash ? 1.6 : 1) + st.hp * 0.05 + st.def * 2;
+const power = st => st.atk * st.aspd * (1 + st.crit * (st.critDmg - 1)) * (st.splash ? 1.6 : 1) + st.hp * 0.5 + st.def * 2;
 
 function buy(cost, fn) { if (S.gold < cost) return; S.gold -= cost; fn(); save(); update(); }
 function train(id) { buy(heroCost(id), () => { S.heroLv[id]++; sc().refreshHero(id); }); }
@@ -40,7 +41,7 @@ function updateHeroes() {
   for (const h of HEROES) {
     const d = cards[h.id]; if (!d) continue; const st = heroStats(h), u = sc()?.heroUnit(h.id);
     d.querySelector('.lv').textContent = 'Lv ' + S.heroLv[h.id];
-    d.querySelector('.atk').textContent = fmt(st.atk); d.querySelector('.hp').textContent = fmt(st.hp); d.querySelector('.pwr').textContent = fmt(power(st));
+    d.querySelector('.atk').textContent = fmt1(st.atk); d.querySelector('.hp').textContent = fmt1(st.hp); d.querySelector('.pwr').textContent = fmt1(power(st));
     d.querySelector('.hpbar i').style.width = (u ? 100 * u.hp / u.max : 0) + '%';
     const t = d.querySelector('.train'), a = d.querySelector('.abil'), r = d.querySelector('.recruit');
     if (t) { t.querySelector('small').textContent = fmt(heroCost(h.id)) + ' gold'; t.disabled = S.gold < heroCost(h.id); }
@@ -58,17 +59,16 @@ function renderSheet() {
   const row = (k, v, n) => `<div class="row"><span>${k}</span><b>${v}</b>${n ? `<em>→ ${n}</em>` : '<em></em>'}</div>`;
   $('#sheet-body').innerHTML = `<div class="sheet-head">${portrait(h, true)}<div><h2>${h.name}</h2><div class="title">${h.title}</div>
       <div class="badges">${badge('cls', h.cls)}${badge('attr', h.attr)}<span class="badge">Lv ${lv}</span></div></div></div>
-    <div class="cols"><div class="stats"><h3>Battle Stats</h3>
-      ${row('ATK', fmt(st.atk), fmt(nx.atk))}${row('HP', u ? `${fmt(u.hp)} / ${fmt(st.hp)}` : fmt(st.hp) + (S.unlocked[h.id] ? ' (fallen)' : ''), fmt(nx.hp))}
-      ${row('DEF', fmt(st.def) + ` <small>(-${pct(red)} vs Lv ${S.stage} Brute)</small>`, fmt(nx.def))}
-      ${row('Attack Speed', st.aspd.toFixed(2) + '/s')}${row('Move Speed', st.move)}${row('Range', st.range)}
-      ${row('Crit Chance', pct(st.crit))}${row('Crit Damage', pct(st.critDmg))}
+    <div class="cols"><div class="stats"><h3>Battle Stats <small class="dim">value · base + growth/level</small></h3>
+      ${STAT_KEYS.map(k => { const t = CLASS_STATS[h.cls][k], isPct = k === 'crit' || k === 'critDmg', f = v => isPct ? (v * 100).toFixed(1) + '%' : fmt1(v), g = v => isPct ? (v * 100).toFixed(2) + '%' : (Math.round(v * 1000) / 1000);
+        const cur = k === 'hp' && u ? `${fmt1(u.hp)} / ${fmt1(st.hp)}` : f(st[k]);
+        return row(STAT_NAMES[k], cur + ` <small>(${g(t.base)} + ${g(t.growth)})</small>`, t.growth ? f(nx[k]) : ''); }).join('')}
+      <div class="row"><span>DEF effect</span><b><small>−${pct(red)} damage from a Lv ${S.stage} Brute hit</small></b><em></em></div>
       ${st.splash ? row('Splash Radius', st.splash) : ''}${st.heal ? row('Heal Power', pct(st.heal) + ' ATK') : ''}
-      ${row('Power', fmt(power(st)), fmt(power(nx)))}</div>
+      ${row('Power', fmt1(power(st)), fmt1(power(nx)))}${S.oaths ? `<p class="dim">HP/ATK include Oathmark bonus ×${oathMult().toFixed(1)}</p>` : ''}</div>
     <div class="lore"><h3>${h.abil.name} <small>Rank ${rk}</small></h3><p>${h.abil.text}</p><p class="dim">Damage/heal ×${mult.toFixed(2)} · cooldown ${cd.toFixed(1)} s</p>
       <h3>${CLASSES[h.cls].icon} ${CLASSES[h.cls].name}</h3><p>${CLASSES[h.cls].desc}</p>
-      <h3 style="color:${a.css}">${a.icon} ${a.name}</h3><p>Deals +30% to <b>${ATTRS[ADV[h.attr]].name}</b>, and deals −20% to (takes +30% from) <b>${ATTRS[weakTo(h.attr)].name}</b>.</p>
-      <p class="dim">Oathmark bonus: ×${oathMult().toFixed(1)} ATK/HP</p></div></div>
+      ${ATTR_ENABLED ? `<h3 style="color:${a.css}">${a.icon} ${a.name}</h3><p>Deals +30% to <b>${ATTRS[ADV[h.attr]].name}</b>, and deals −20% to (takes +30% from) <b>${ATTRS[weakTo(h.attr)].name}</b>.</p>` : ''}</div></div>
     <div class="sheet-actions">${S.unlocked[h.id] ? `<button class="btn gold" id="sh-train" ${S.gold < heroCost(h.id) ? 'disabled' : ''}>Train to Lv ${lv + 1}<small>${fmt(heroCost(h.id))} gold</small></button>
       <button class="btn" id="sh-abil" ${S.gold < abilCost(h.id) ? 'disabled' : ''}>Rank up ${h.abil.name}<small>${fmt(abilCost(h.id))} gold</small></button>`
       : `<button class="btn gold" id="sh-rec" ${S.gold < h.unlock ? 'disabled' : ''}>Recruit<small>${fmt(h.unlock)} gold</small></button>`}</div>`;
@@ -79,13 +79,15 @@ function renderSheet() {
 function renderCodex() {
   const reg = REGIONS[region()];
   const chain = ['fire', 'nature', 'frost', 'fire'].map(k => `<span style="color:${ATTRS[k].css}">${ATTRS[k].icon} ${ATTRS[k].name}</span>`).join(' <b>›</b> ');
-  $('#tab-codex').innerHTML = `<div class="codex"><div class="box"><h3>Attribute Cycle</h3><p>${chain}</p>
-    <p><span style="color:${ATTRS.light.css}">☀ Light</span> <b>⇄</b> <span style="color:${ATTRS.shadow.css}">☾ Shadow</span> (each deals +30% to the other)</p>
-    <p class="dim">Advantage: +30% damage. Disadvantage: −20%. DEF: damage = hit² ÷ (hit + DEF).</p>
-    <p>Current land: <b>${reg.name}</b>, where most foes are <span style="color:${ATTRS[reg.attr].css}">${ATTRS[reg.attr].icon} ${ATTRS[reg.attr].name}</span>.</p></div>
-    <div class="box"><h3>Gravemaw Horde · Lv ${S.stage}</h3><table><tr><th>Foe</th><th>Class</th><th>HP</th><th>ATK</th><th>DEF</th><th>Spd</th><th>Rng</th><th>From</th></tr>
-    ${Object.values(ENEMIES).map(e => { const s = enemyStats(e); return `<tr class="${S.stage < e.from ? 'dim' : ''}"><td>${e.name}</td><td>${CLASSES[e.cls].icon} ${CLASSES[e.cls].name}</td><td>${fmt(s.hp)}</td><td>${fmt(s.atk)}</td><td>${fmt(s.def)}</td><td>${e.aspd}/s</td><td>${e.range}</td><td>${e.from}</td></tr>`; }).join('')}
-    </table><p class="dim">Every 10th stage a Warlord (60× HP, 5× ATK) wards the Rift.</p></div></div>`;
+  const attrBox = ATTR_ENABLED ? `<div class="box"><h3>Attribute Cycle</h3><p>${chain}</p>
+    <p><span style="color:${ATTRS.light.css}">☀ Light</span> <b>⇄</b> <span style="color:${ATTRS.shadow.css}">☾ Shadow</span></p></div>` : '';
+  $('#tab-codex').innerHTML = `<div class="codex">${attrBox}<div class="box"><h3>Combat Rules</h3>
+    <p>Stats grow <b>linearly</b>: stat = base + growth × (level − 1). Goblin level = stage.</p>
+    <p class="dim">DEF: damage = hit² ÷ (hit + DEF), so big hits punch through and small hits are soaked.</p>
+    <p>Current land: <b>${reg.name}</b>.</p></div>
+    <div class="box" style="grid-column:1/-1"><h3>Goblin Warband · Lv ${S.stage}</h3><table><tr><th>Foe</th><th>Class</th><th>HP</th><th>ATK</th><th>DEF</th><th>AtkSpd</th><th>Move</th><th>Rng</th><th>From</th></tr>
+    ${Object.values(ENEMIES).map(e => { const s = enemyStats(e); return `<tr class="${S.stage < e.from ? 'dim' : ''}"><td>${e.name}</td><td>${CLASSES[e.cls].icon} ${CLASSES[e.cls].name}</td><td>${fmt1(s.hp)} <small class="dim">(${e.stats.hp.base}+${e.stats.hp.growth})</small></td><td>${fmt1(s.atk)} <small class="dim">(${e.stats.atk.base}+${e.stats.atk.growth})</small></td><td>${fmt1(s.def)}</td><td>${s.aspd.toFixed(1)}</td><td>${s.move}</td><td>${s.range}</td><td>${e.from}</td></tr>`; }).join('')}
+    </table><p class="dim">Every 10th stage a ${BOSS.name} (Brute ×${BOSS.hp} HP, ×${BOSS.atk} ATK, ×${BOSS.def} DEF) wards the Rift.</p></div></div>`;
 }
 function renderBanners() {
   const g = oathGain();

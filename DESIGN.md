@@ -91,3 +91,22 @@ Phaser 3 + Vite with `base: './'` for GitHub Pages. A DOM UI panel sits over the
 
 ## Different from Hordefall
 The battle is an army battle across one long, scrolling map rather than a small fixed team. A few oversized heroes cleave through huge hordes, and the setting, names and prestige systems are all original.
+
+## M1.7 — 16-bit art, goblins, linear stats
+
+**Art.** Everything is now true 16-bit pixel art: a 32-colour palette per sheet, hard alpha, a 1 px dark outline and 2× nearest-neighbour scaling, built by `tools/make_sprites_16bit.py`. An image-generation tool wasn't available, so the sheets were made procedurally in code. Aldric and Sylwen are derived from their earlier sprites, and the goblins are drawn from scratch.
+- Aldric `aldric_v3`: idle, walk ×4, attack ×5.
+- Sylwen `sylwen_v3`: idle, walk ×4, attack ×4.
+- Five goblin classes, all `goblin_*_v1`, each with walk ×4 and attack ×3: Brute (knight), Sneak (rogue), Slinger (archer), Hexer (mage) and Mender (cleric).
+- Every 10th stage brings the **Goblin Warchief**, a scaled-up Brute.
+- Units play their walk frames while moving and their idle frame while standing.
+
+**Stats are linear for now:** `stat = base + growth × (level − 1)`.
+- This covers HP, ATK, DEF, AtkSpd, MoveSpd, Range, Crit and CritDmg, with values set per class in `CLASS_STATS`.
+- Goblins use the same formula, with level = stage number.
+- There's no exponential stage or training multiplier. Exponential growth is planned for a later milestone, once the core loop is tuned.
+- Costs: hero level `10 + 6n + 0.6n²`; ability rank `40 × rank²`.
+- Gold per kill: `1 + 0.5 × (stage − 1)`.
+- Stage length: `min(2000, 1100 + 45 × stage)` px.
+
+**Attributes** are still in the code, but `ATTR_ENABLED = false` turns off their damage modifiers and hides their badges.
