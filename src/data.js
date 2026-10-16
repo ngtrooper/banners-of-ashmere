@@ -37,12 +37,12 @@ export const CLASSES = {
 
 export const HEROES = [
   { id: 'aldric', name: 'Ser Aldric Vane', title: 'Shield of House Vane', cls: 'knight', attr: 'light', unlock: 0,
-    sprite: { key: 'aldric', url: './sprites/aldric_v3.png', fw: 178, fh: 176, frames: 10, scale: 1, ox: 0.439, oy: 0.987, anims: { idle: [0], walk: [6, 7, 8, 9], attack: [1, 2, 3, 4, 5] }, hit: 2, frameDur: 0.08 }, portrait: './sprites/aldric-portrait_v4.png',
+    sprite: { key: 'aldric', url: './sprites/aldric_v4.png', fw: 166, fh: 182, frames: 12, scale: 1, ox: 0.446, oy: 0.984, anims: { idle: [0], walk: [6, 7, 8, 9, 10, 11], attack: [1, 2, 3, 4, 5] }, hit: 2, frameDur: 0.08 }, portrait: './sprites/aldric-portrait_v5.png',
     abil: { name: 'Bulwark Charge', text: 'Slams the 6 nearest foes for 220% ATK, knocking them back and stunning them for 1.2 s.' } },
   { id: 'kael', name: 'Kael Duskmantle', title: 'Blade of the Hollow Court', cls: 'rogue', attr: 'shadow', unlock: 120,
     abil: { name: 'Shadowstep', text: 'Vanishes and reappears beside the most dangerous ranged foe nearby, striking a guaranteed 400% ATK crit.' } },
   { id: 'sylwen', name: 'Sylwen Thornleaf', title: 'Warden of the Elderwood', cls: 'archer', attr: 'nature', unlock: 0,
-    sprite: { key: 'sylwen', url: './sprites/sylwen_v3.png', fw: 102, fh: 144, frames: 9, scale: 1, ox: 0.392, oy: 0.986, anims: { idle: [0], walk: [5, 6, 7, 8], attack: [1, 2, 3, 4] }, hit: 2, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 78 }, portrait: './sprites/sylwen-portrait_v3.png',
+    sprite: { key: 'sylwen', url: './sprites/sylwen_v4.png', fw: 142, fh: 152, frames: 11, scale: 1, ox: 0.366, oy: 0.967, anims: { idle: [6], walk: [0, 1, 2, 3, 4, 5], attack: [6, 7, 8, 9, 10] }, hit: 3, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 82 }, portrait: './sprites/sylwen-portrait_v4.png',
     abil: { name: 'Thornvolley', text: 'Looses thorned arrows at the 10 nearest foes for 180% ATK each.' } },
   { id: 'maera', name: 'Maera of the Ember Crown', title: 'Drake-bonded Pyromancer', cls: 'mage', attr: 'fire', unlock: 0, splash: 70,
     abil: { name: 'Drakefire', text: 'Her drake scorches up to 8 foes in a 180 px strip for 160% ATK.' } },
@@ -52,18 +52,18 @@ export const HEROES = [
 
 // Goblin warband (placeholder roster; region-themed enemies come later). Enemy level = stage.
 export const ENEMIES = {
-  brute: { id: 'brute', name: 'Goblin Brute', cls: 'knight', r: 20, w: 30, from: 1, sprite: { key: 'goblin_brute', url: './sprites/goblin_brute_v1.png', fw: 148, fh: 150, frames: 7, scale: 1, ox: 0.45, oy: 0.973, anims: { idle: [1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }, hit: 1, frameDur: 0.1 },
+  brute: { id: 'brute', name: 'Goblin Brute', cls: 'knight', r: 20, w: 30, from: 1, sprite: { key: 'goblin_brute', url: './sprites/goblin_brute_v2.png', fw: 136, fh: 114, frames: 6, scale: 1, ox: 0.397, oy: 0.956, anims: { idle: [0], walk: [0, 1, 2, 3, 4, 5], attack: [] }, hit: 0, atkDur: 0.32, hitAt: 0.16, frameDur: 0.1 },
     stats: st({ hp: [9, 1.2], atk: [2, 0.4], def: [1.5, 0.25], aspd: [0.7, 0], move: [38, 0], range: [24, 0], crit: [0.05, 0], critDmg: [1.5, 0] }) },
-  sneak: { id: 'sneak', name: 'Goblin Sneak', cls: 'rogue', r: 13, w: 20, from: 3, sprite: { key: 'goblin_sneak', url: './sprites/goblin_sneak_v1.png', fw: 112, fh: 112, frames: 7, scale: 1, ox: 0.45, oy: 0.964, anims: { idle: [1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }, hit: 1, frameDur: 0.1 },
+  sneak: { id: 'sneak', name: 'Goblin Sneak', cls: 'rogue', r: 13, w: 20, from: 3, sprite: { key: 'goblin_sneak', url: './sprites/goblin_sneak_v2.png', fw: 122, fh: 96, frames: 6, scale: 1, ox: 0.459, oy: 0.948, anims: { idle: [0], walk: [0, 1, 2, 3, 4, 5], attack: [] }, hit: 0, atkDur: 0.32, hitAt: 0.16, frameDur: 0.1 },
     stats: st({ hp: [4, 0.6], atk: [1.6, 0.35], def: [0.5, 0.1], aspd: [1.4, 0], move: [85, 0], range: [18, 0], crit: [0.2, 0], critDmg: [1.5, 0] }) },
-  slinger: { id: 'slinger', name: 'Goblin Slinger', cls: 'archer', r: 14, w: 20, from: 1, sprite: { key: 'goblin_slinger', url: './sprites/goblin_slinger_v1.png', fw: 116, fh: 118, frames: 7, scale: 1, ox: 0.45, oy: 0.966, anims: { idle: [1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }, hit: 1, frameDur: 0.1 },
+  slinger: { id: 'slinger', name: 'Goblin Slinger', cls: 'archer', r: 14, w: 20, from: 1, sprite: { key: 'goblin_slinger', url: './sprites/goblin_slinger_v2.png', fw: 96, fh: 94, frames: 6, scale: 1, ox: 0.5, oy: 0.968, anims: { idle: [0], walk: [0, 1, 2, 3, 4, 5], attack: [] }, hit: 0, atkDur: 0.32, hitAt: 0.16, frameDur: 0.1 },
     stats: st({ hp: [3, 0.5], atk: [1.4, 0.3], def: [0.5, 0.1], aspd: [0.8, 0], move: [42, 0], range: [200, 0], crit: [0.1, 0], critDmg: [1.5, 0] }) },
-  hexer: { id: 'hexer', name: 'Goblin Hexer', cls: 'mage', r: 14, w: 15, from: 5, splash: 50, sprite: { key: 'goblin_hexer', url: './sprites/goblin_hexer_v1.png', fw: 116, fh: 118, frames: 7, scale: 1, ox: 0.45, oy: 0.966, anims: { idle: [1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }, hit: 1, frameDur: 0.1 },
+  hexer: { id: 'hexer', name: 'Goblin Hexer', cls: 'mage', r: 14, w: 15, from: 5, splash: 50, sprite: { key: 'goblin_hexer', url: './sprites/goblin_hexer_v2.png', fw: 122, fh: 98, frames: 6, scale: 1, ox: 0.459, oy: 0.949, anims: { idle: [0], walk: [0, 1, 2, 3, 4, 5], attack: [] }, hit: 0, atkDur: 0.32, hitAt: 0.16, frameDur: 0.1, shotColor: 0xb44dff, shotY: 62 },
     stats: st({ hp: [3, 0.5], atk: [1.2, 0.3], def: [0.5, 0.1], aspd: [0.5, 0], move: [40, 0], range: [180, 0], crit: [0.05, 0], critDmg: [1.5, 0] }) },
-  mender: { id: 'mender', name: 'Goblin Mender', cls: 'cleric', r: 14, w: 10, from: 8, heal: 1.5, sprite: { key: 'goblin_mender', url: './sprites/goblin_mender_v1.png', fw: 116, fh: 118, frames: 7, scale: 1, ox: 0.45, oy: 0.966, anims: { idle: [1], walk: [0, 1, 2, 3], attack: [4, 5, 6] }, hit: 1, frameDur: 0.1 },
+  mender: { id: 'mender', name: 'Goblin Mender', cls: 'cleric', r: 14, w: 10, from: 8, heal: 1.5, sprite: { key: 'goblin_mender', url: './sprites/goblin_mender_v2.png', fw: 104, fh: 96, frames: 6, scale: 1, ox: 0.404, oy: 0.948, anims: { idle: [0], walk: [0, 1, 2, 3, 4, 5], attack: [] }, hit: 0, atkDur: 0.32, hitAt: 0.16, frameDur: 0.1, shotColor: 0x8dff4a, shotY: 66 },
     stats: st({ hp: [4, 0.6], atk: [0.6, 0.15], def: [0.5, 0.1], aspd: [0.6, 0], move: [40, 0], range: [160, 0], crit: [0.05, 0], critDmg: [1.5, 0] }) },
 };
-export const BOSS = { name: 'Goblin Warchief', hp: 25, atk: 3, def: 2, scale: 1.3 };
+export const BOSS = { name: 'Goblin Warchief', hp: 25, atk: 3, def: 2, scale: 1.25 };
 
 export const REGIONS = [
   { name: 'Greenvale Marches', attr: 'nature', sky: 0x2b3d5a, ground: 0x3d5a2c },

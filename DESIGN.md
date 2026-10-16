@@ -110,3 +110,18 @@ The battle is an army battle across one long, scrolling map rather than a small 
 - Stage length: `min(2000, 1100 + 45 × stage)` px.
 
 **Attributes** are still in the code, but `ATTR_ENABLED = false` turns off their damage modifiers and hides their badges.
+
+## M1.8 — Generated sprite sheets
+
+The code-drawn walk cycles and goblins are replaced by generated pixel-art sheets. `tools/make_sprites_gen.py` processes them; the source JPGs stay local and are never committed. The pipeline:
+- Frames are found with dilated connected components, plus a grid cut for the goblin sheet.
+- The black background is removed, every frame shares a common foot baseline, and all cells in a sheet are the same size.
+- Frames are box-downscaled to native resolution with hard alpha and a 1 px outline, then upscaled ×2 nearest-neighbour. No palette quantization, so the art isn't degraded.
+
+Assets:
+- `aldric_v4`: the original idle and 5 attack frames, plus the new 6-frame walk, matched to ~140 px.
+- `sylwen_v4`: a 6-frame walk, and idle plus nock, draw, release (arrow fires here) and recover.
+- `goblin_*_v2`: a 6-frame walk for each goblin, shown flipped to face left.
+  - Regular goblins are ~62% of hero height and the Brute ~75%. The Warchief is a Brute at 1.25×.
+  - Goblins have no attack frames yet. They attack with a lunge/squash tween and a white flash.
+  - Hexer and Mender projectiles are purple and green.

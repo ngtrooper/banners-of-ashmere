@@ -126,7 +126,7 @@ export class Battle extends Phaser.Scene {
     this.deal(u, t, 1);
     if (u.cls === 'knight') { let n = u.boss ? 2 : u.side === 0 ? 3 : 1; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < 60 && Math.abs(o.y - t.y) < 70) { this.deal(u, o, 1); n--; } } }
     else if (u.cls === 'mage') { let n = 10; for (const o of opp) { if (n <= 0) break; if (o !== t && !o.dead && !o.portal && Math.abs(o.x - t.x) < u.splash && Math.abs(o.y - t.y) < u.splash) { this.deal(u, o, 0.6); n--; } } this.blast(t.x, t.y, u.splash, u.color); this.beam(u, t, u.color); }
-    else if (u.range > 60) { const sp = u.hero && u.hero.sprite; if (sp && sp.shotColor) this.shots.push({ x1: u.x + 24, y1: u.y + u.r - sp.shotY, x2: t.x, y2: t.y, t: 0.15, c: sp.shotColor }); else this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090); }
+    else if (u.range > 60) { const sp = u.sprite; if (sp && sp.shotColor) this.shots.push({ x1: u.x + (u.side ? -20 : 24), y1: u.y + u.r - sp.shotY, x2: t.x, y2: t.y, t: 0.15, c: sp.shotColor }); else this.beam(u, t, u.side === 0 ? 0xffffaa : 0xff9090); }
   }
   move(u, dir, dt) {
     let nx = u.x + dir * u.move * dt;
@@ -159,7 +159,7 @@ export class Battle extends Phaser.Scene {
     for (const u of this.units) {
       if (u.dead || u.portal) continue;
       if (u.idle) { if (front > u.x - 380) this.wake(u); else continue; }
-      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (!u.sprite || u.anim > u.sprite.anims.attack.length * u.sprite.frameDur) u.anim = null; }
+      if (u.anim != null) { u.anim += dt; if (u.pending && u.anim >= u.pending.at) { const q = u.pending; u.pending = null; if (!q.tgt.dead) this.attack(u, q.tgt, q.healing, q.opp); } if (!u.sprite || u.anim > (u.sprite.anims.attack.length ? u.sprite.anims.attack.length * u.sprite.frameDur : u.sprite.atkDur)) u.anim = null; }
       u.moving = false;
       if (u.stun > 0) { u.stun -= dt; continue; }
       u.cd -= dt;
@@ -168,7 +168,7 @@ export class Battle extends Phaser.Scene {
       if (u.heal) { const w = this.mostWounded(u, mates, u.side === 0 ? 0.85 : 0.75); if (w) { tgt = w; healing = true; } }
       if (!tgt) tgt = u.side === 0 ? this.heroTarget(u, opp) : this.enemyTarget(u, opp);
       if (tgt) {
-        if (Math.abs(tgt.x - u.x) - u.r - tgt.r <= u.range) { if (u.cd <= 0) { u.cd = 1 / u.aspd; const sp = u.sprite; if (sp) { u.anim = 0; u.pending = { tgt, healing, opp, at: sp.hit * sp.frameDur }; } else this.attack(u, tgt, healing, opp); } }
+        if (Math.abs(tgt.x - u.x) - u.r - tgt.r <= u.range) { if (u.cd <= 0) { u.cd = 1 / u.aspd; const sp = u.sprite; if (sp) { u.anim = 0; u.pending = { tgt, healing, opp, at: sp.anims.attack.length ? sp.hit * sp.frameDur : sp.hitAt }; } else this.attack(u, tgt, healing, opp); } }
         else this.move(u, Math.sign(tgt.x - u.x), dt);
       } else if (u.side === 0) this.move(u, 1, dt);
       if (u.hero && (u.abilCd -= dt) <= 0 && this.ability(u, opp, mates)) u.abilCd = Math.max(3, 7 - 0.3 * S.abilLv[u.hero.id]);
@@ -211,13 +211,14 @@ export class Battle extends Phaser.Scene {
       }
       if (u.sprite) {
         const sp = u.sprite, an = sp.anims, feet = u.y + u.r, sc = sp.scale * u.ss;
-        const fr = u.anim != null ? an.attack[Math.min(an.attack.length - 1, Math.floor(u.anim / sp.frameDur))]
+        const lunge = u.anim != null && !an.attack.length, lp = lunge ? Math.sin(Math.PI * Math.min(1, u.anim / sp.atkDur)) : 0;
+        const fr = lunge ? an.walk[1] : u.anim != null ? an.attack[Math.min(an.attack.length - 1, Math.floor(u.anim / sp.frameDur))]
           : u.moving ? an.walk[Math.floor(tt / 0.13 + u.phase) % an.walk.length] : an.idle[0];
         const spr = this.spool[si] || (this.spool[si] = this.add.sprite(0, 0, sp.key, 0)); si++;
         if (spr.texture.key !== sp.key) spr.setTexture(sp.key);
-        spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
-          .setPosition(Math.round(u.x), Math.round(feet + (u.hero && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
-        if (u.tint) spr.setTint(u.tint); else spr.clearTint();
+        spr.setFrame(fr).setOrigin(sp.ox, sp.oy).setScale(sc * (1 + 0.12 * lp), sc * (1 - 0.1 * lp)).setFlipX(u.side === 1).setDepth(6 + u.y / 1000).setVisible(true)
+          .setPosition(Math.round(u.x + (u.side ? -1 : 1) * 12 * lp), Math.round(feet + (u.hero && fr === an.idle[0] && !u.moving ? Math.sin(tt * 3) * 1.5 : 0)));
+        if (lunge && lp > 0.8) spr.setTintFill(0xffffff); else if (u.tint) spr.setTint(u.tint); else spr.clearTint();
         if (u.idle) spr.setAlpha(0.85); else spr.setAlpha(1);
         g.fillStyle(0x000000, 0.35).fillEllipse(u.x, feet, u.hero ? 44 : u.r * 2.4, 9);
         const top = feet - sp.fh * sc * sp.oy - 4;
