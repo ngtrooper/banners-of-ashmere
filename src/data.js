@@ -21,7 +21,7 @@ export const CLASSES = {
 
 export const HEROES = [
   { id: 'aldric', name: 'Ser Aldric Vane', title: 'Shield of House Vane', cls: 'knight', attr: 'light', unlock: 0,
-    sprite: { key: 'aldric', url: './sprites/aldric.png', fw: 178, fh: 176, frames: 6, scale: 1, ox: 0.439, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait.png',
+    sprite: { key: 'aldric', url: './sprites/aldric_v2.png', fw: 178, fh: 176, frames: 6, scale: 1, ox: 0.439, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait_v2.png',
     base: { atk: 60, hp: 2600, def: 14, aspd: 0.8, move: 80, range: 40, crit: 0.05, critDmg: 1.5 },
     abil: { name: 'Bulwark Charge', text: 'Slams the 6 nearest foes for 220% ATK, knocking them back and stunning them for 1.2 s.' } },
   { id: 'kael', name: 'Kael Duskmantle', title: 'Blade of the Hollow Court', cls: 'rogue', attr: 'shadow', unlock: 400,
@@ -29,7 +29,7 @@ export const HEROES = [
     abil: { name: 'Shadowstep', text: 'Vanishes and reappears beside the most dangerous ranged foe nearby, striking a guaranteed 400% ATK crit.' } },
   { id: 'sylwen', name: 'Sylwen Thornleaf', title: 'Warden of the Elderwood', cls: 'archer', attr: 'nature', unlock: 0,
     // painted (non-pixel) art: exported at 2x, shown at 0.5 with LINEAR filtering
-    sprite: { key: 'sylwen', url: './sprites/sylwen.png', fw: 118, fh: 176, frames: 5, scale: 0.5, linear: true, ox: 0.399, oy: 0.997, hitFrame: 3, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 50 }, portrait: './sprites/sylwen-portrait.png',
+    sprite: { key: 'sylwen', url: './sprites/sylwen_v2.png', fw: 118, fh: 176, frames: 5, scale: 0.5, linear: true, ox: 0.399, oy: 0.997, hitFrame: 3, frameDur: 0.08, shotColor: 0x7dff6a, shotY: 50 }, portrait: './sprites/sylwen-portrait_v2.png',
     base: { atk: 95, hp: 1200, def: 4, aspd: 1.0, move: 95, range: 340, crit: 0.15, critDmg: 1.75 },
     abil: { name: 'Thornvolley', text: 'Looses thorned arrows at the 10 nearest foes for 180% ATK each.' } },
   { id: 'maera', name: 'Maera of the Ember Crown', title: 'Drake-bonded Pyromancer', cls: 'mage', attr: 'fire', unlock: 0,

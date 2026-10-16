@@ -62,10 +62,10 @@ cells=[to_native(sheet.crop((i*cw,0,(i+1)*cw,ch))) for i in range(6)]
 sw,sh=cells[0].size
 small=Image.new('RGBA',(sw*6,sh))
 for i,c in enumerate(cells): small.alpha_composite(c,(i*sw,0))
-small.save('/workspace/game/public/sprites/aldric.png')
+small.save('/workspace/game/public/sprites/aldric_v2.png')
 print('frame',sw,sh,'originX',round((left*NATIVE_H/ch+2)/nw,3),'originY',round(up/ch,3))
 # portrait: native-res head crop of frame 1 upscaled x4 nearest
 c0=cells[0]; fx=int(sw*((left*NATIVE_H/ch+2)/nw)); side=int(sh*0.5)
 por=c0.crop((fx-side//2+int(side*0.08),0,fx+side//2+int(side*0.08),side)).resize((128,128),Image.NEAREST)
-por.save('/workspace/game/public/sprites/aldric-portrait.png')
+por.save('/workspace/game/public/sprites/aldric-portrait_v2.png')
 chk=Image.new('RGBA',small.size,(60,90,50,255)); chk.alpha_composite(small); chk.save('/workspace/aldric_check.png')

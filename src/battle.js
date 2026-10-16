@@ -18,7 +18,11 @@ export class Battle extends Phaser.Scene {
     this.glyphs = {};
     for (const h of HEROES) this.glyphs[h.id] = this.add.text(0, 0, CLASSES[h.cls].icon, { fontFamily: 'DejaVu Sans,Segoe UI Symbol,serif', fontSize: '20px', color: '#1a1020' }).setOrigin(0.5).setDepth(6).setVisible(false);
     this.sprites = {};
-    for (const h of HEROES) if (h.sprite) { if (h.sprite.linear) this.textures.get(h.sprite.key).setFilter(Phaser.Textures.FilterMode.LINEAR); this.sprites[h.id] = this.add.sprite(0, 0, h.sprite.key, 0).setOrigin(h.sprite.ox, h.sprite.oy).setScale(h.sprite.scale).setDepth(6).setVisible(false); }
+    for (const h of HEROES) if (h.sprite) {
+      // guard: a stale/mismatched sheet would render as one big image; fall back to the placeholder instead
+      const tex = this.textures.get(h.sprite.key), src = tex.getSourceImage();
+      if (tex.frameTotal - 1 !== h.sprite.frames || src.width !== h.sprite.fw * h.sprite.frames || src.height !== h.sprite.fh) { console.warn(`sprite ${h.sprite.key}: sheet ${src.width}x${src.height} does not match ${h.sprite.frames}x${h.sprite.fw}x${h.sprite.fh}; using placeholder`); continue; }
+      if (h.sprite.linear) this.textures.get(h.sprite.key).setFilter(Phaser.Textures.FilterMode.LINEAR); this.sprites[h.id] = this.add.sprite(0, 0, h.sprite.key, 0).setOrigin(h.sprite.ox, h.sprite.oy).setScale(h.sprite.scale).setDepth(6).setVisible(false); }
     this.txt = this.add.text(10, 8, '', { fontFamily: 'Georgia,serif', fontSize: '14px', color: '#f1e4c4', stroke: '#000', strokeThickness: 3, lineSpacing: 4 }).setScrollFactor(0).setDepth(11);
     this.cameras.main.setBounds(0, 0, 1e8, H);
     this.startStage(0);
@@ -198,7 +202,7 @@ export class Battle extends Phaser.Scene {
         if (u.shielded) g.lineStyle(4, 0x9fe8ff, 0.7).strokeEllipse(u.x, u.y, 100, 170);
         this.bar(g, u.x, u.y - 92, 100, u.hp / u.max, u.shielded ? 0x9fe8ff : 0xc070ff); continue;
       }
-      if (u.hero && u.hero.sprite) {
+      if (u.hero && this.sprites[u.hero.id]) {
         const sp = u.hero.sprite, spr = this.sprites[u.hero.id], feet = u.y + u.r;
         // frames: 0 idle, 1 wind-up, 2 swing, 3 impact, 4 follow-through, 5 recover
         const fr = u.anim == null ? 0 : Math.min(sp.frames - 1, 1 + Math.floor(u.anim / sp.frameDur));

@@ -54,8 +54,8 @@ sheet=Image.new('RGBA',(sw*len(frames),sh))
 for i,(im,f,c) in enumerate(frames):
     cell=Image.new('RGBA',(cw,ch)); cell.alpha_composite(im,(left-c,up-f))
     sheet.alpha_composite(cell.resize((sw,sh),Image.LANCZOS),(i*sw,0))
-sheet.save(OUT+'sylwen.png'); print('cell',sw,sh,'origin',round(left/cw,3),round(up/ch,3))
+sheet.save(OUT+'sylwen_v2.png'); print('cell',sw,sh,'origin',round(left/cw,3),round(up/ch,3))
 f1,_,c1=frames[0]; side=int(f1.height*0.52); hx=c1
 por=Image.new('RGBA',(side,side)); por.alpha_composite(f1.crop((hx-side//2,0,hx+side//2,side)))
-por.resize((128,128),Image.LANCZOS).save(OUT+'sylwen-portrait.png')
+por.resize((128,128),Image.LANCZOS).save(OUT+'sylwen-portrait_v2.png')
 chk=Image.new('RGBA',sheet.size,(255,0,255,255)); chk.alpha_composite(sheet); chk.save('/workspace/sylwen_check.png')
