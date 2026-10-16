@@ -1,5 +1,14 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" href="data:,"><title>Banners of Ashmere</title><link rel="stylesheet" href="./src/style.css"></head>
-<body><div id="hud"><span id="gold"></span><span id="stage"></span><span id="oath"></span>
-<button id="rally">Raise the Banners</button></div>
-<div id="game"></div><div id="panel"></div><script type="module" src="./src/main.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,"><title>Banners of Ashmere</title></head>
+<body><div id="app">
+<header id="topbar"><div class="brand">⚔ <span>Banners of Ashmere</span></div>
+  <div class="res"><div class="chip gold"><i>●</i><b id="r-gold">0</b><small>Gold</small></div>
+  <div class="chip oath"><i>✧</i><b id="r-oath">0</b><small>Oathmarks</small></div>
+  <div class="chip"><i>⚑</i><b id="r-stage">1</b><small>Stage · best <span id="r-best"></span></small></div>
+  <div class="chip wide"><small id="r-region"></small></div></div>
+  <button class="btn small" id="speed" title="Battle speed">1×</button></header>
+<div id="frame"><div id="game"></div></div>
+<section id="panel"><div class="tab" id="tab-heroes"></div><div class="tab hidden" id="tab-codex"></div><div class="tab hidden" id="tab-banners"></div></section>
+<nav id="tabs"><button data-tab="heroes" class="on"><i>♜</i>Heroes</button><button data-tab="codex"><i>❦</i>Codex</button><button data-tab="banners"><i>⚑</i>Banners</button></nav>
+<div id="modal" class="hidden"><div class="sheet"><button id="sheet-close" class="x">✕</button><div id="sheet-body"></div></div></div>
+</div><script type="module" src="./src/main.js"></script></body></html>

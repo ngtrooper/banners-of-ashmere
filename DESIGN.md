@@ -18,15 +18,46 @@ Each stage is a 1,200 px stretch of the scrolling map that ends at a **Gravemaw 
 ## Combat feedback
 Every hero, enemy, Warlord and Rift has an HP bar. Floating damage numbers come from a pool of 70 recycled text objects: yellow for hero damage, larger orange for crits (15% chance, 2x damage), red for damage taken by heroes. The HUD shows the region, enemy level and its HP/damage, the foe count, the Rift's HP and the distance to it.
 
-## Heroes (commanders)
-Heroes are the whole army: big, durable units whose basic attacks **cleave** (hitting 2–4 foes), each with an auto-cast ability. Planned: Command Auras that buff the other heroes, and more hero slots unlocked as you collect heroes.
-- **Ser Aldric Vane** (House Vane, Shieldlord): Bulwark Charge hits 6 foes for 2.2x damage, knocks them back and stuns them for 1.2 s.
-- **Sylwen Thornleaf** (Elf Warden): Thornvolley hits 10 foes for 1.8x damage.
-- **Maera of the Ember Crown** (Drake Rider): Drakefire scorches up to 8 foes within 180 px ahead for 1.6x damage (nerfed from unlimited foes within 300 px for 4x).
-Planned collection: hero **Sigils** come from **War Chests** and unlock and rank heroes up (stars). Heroes belong to houses, and set bonuses apply when several heroes from the same house are fielded.
+## Stat system (heroes and enemies)
+Stats: **ATK, HP, DEF, Attack Speed, Move Speed, Range, Crit Chance, Crit Damage, Class, Attribute** (some classes also have Splash or Heal Power).
+- **Damage formula:** hit = ATK × skill multiplier × attribute multiplier × (crit ? Crit Damage : 1), then damage = hit² ÷ (hit + DEF). Big hits mostly ignore armour, and small hits get soaked.
+- **Attributes:** Fire › Nature › Frost › Fire, and Light ⇄ Shadow (each strong against the other). Advantage gives +30% damage, disadvantage gives −20%. Each region has a dominant attribute: 60% of its foes share it.
+- **Hero scaling:** per level, ATK and HP ×1.12 and DEF ×1.10. Each Oathmark adds +10% ATK/HP/gold. **Enemy scaling:** ATK, HP and DEF ×1.13 per stage.
 
-## Enemies
-Grunts, raiders, brutes (planned: shamans, wolf riders, drakes) and Warlords. Hordes: 30 + 5 per stage per wave (up to 180), with up to 120 alive at once. All units are drawn at about 2x the earlier size.
+## Classes and formation
+- **Knight**: slow front-line tank. Melee cleave hits up to 4 foes, and nearby enemies are taunted to attack it.
+- **Rogue**: fast, high crit. Dives past the line to hit ranged and wounded foes.
+- **Archer**: long-range single target.
+- **Mage**: ranged; attacks splash 60% damage onto nearby foes.
+- **Cleric**: heals the most wounded ally below 85% HP, otherwise attacks.
+Formation: the Knight leads. The Mage, Cleric and Archer hold 120, 140 and 170 px behind the Knight and never advance past that line. The Rogue roams freely.
+
+## Heroes (commanders)
+| Hero | Class | Attribute | Ability |
+|---|---|---|---|
+| Ser Aldric Vane, Shield of House Vane | Knight | Light | Bulwark Charge: 6 nearest foes take 220% ATK, are knocked back and stunned for 1.2 s |
+| Kael Duskmantle, Blade of the Hollow Court (recruit for 400 gold) | Rogue | Shadow | Shadowstep: teleports to the most dangerous ranged foe for a guaranteed 400% ATK crit |
+| Sylwen Thornleaf, Warden of the Elderwood | Archer | Nature | Thornvolley: 10 foes take 180% ATK |
+| Maera of the Ember Crown, Drake-bonded Pyromancer | Mage | Fire | Drakefire: up to 8 foes in a 180 px strip take 160% ATK |
+| Sister Isolde Brightwater, Tidewarden of the Pale Shrine (recruit for 1,500 gold) | Cleric | Frost | Tidal Grace: heals all allies 25% max HP (up to 50% with rank) |
+Upgrades: **Train** (level) and **Ability Rank** (+35% ability power per rank, cooldown 7 s − 0.3 s per rank, minimum 3 s). Planned: hero Sigils from War Chests, star ranks, house set bonuses.
+
+## Enemies (Gravemaw Horde)
+Every enemy uses the same stat and class rules as the heroes:
+- Gravemaw Brute (Knight: tank, cleaves 2).
+- Ashfang Raider (Rogue: fast, dives on the hero furthest back). Appears from stage 3.
+- Bonespear Thrower (Archer: ranged).
+- Hexcaller (Mage: splash). Appears from stage 5.
+- Rotmender (Cleric: heals other foes). Appears from stage 8.
+**Warlord** (every 10th stage): a Brute with 60× HP, 5× ATK and 2× DEF that wards the Rift.
+**Pre-placed packs:** enemy groups sit every 320 px along the road (3 + stage/4 per pack, maximum 10) and wake when heroes come near, so there's no empty walk. The Rift adds 2 + stage/5 more every 1–2.2 s once the heroes are within 1,100 px. At most 140 enemies are alive at once.
+
+## UI
+- A top resource bar shows Gold, Oathmarks, Stage/best, the region and a 1×/2× speed toggle.
+- The battlefield is framed and has its own HUD showing the region attribute, enemy level, foe count, Rift HP and distance.
+- A bottom tab bar switches between **Heroes** (cards with attribute-coloured portraits, class/attribute badges, live HP bar, Train / Ability / Recruit buttons), **Codex** (attribute cycle and enemy stat table for the current stage) and **Banners** (prestige).
+- Clicking a hero opens a **stat sheet** with every stat, the next-level preview, DEF reduction against the current enemies, ability details, class and attribute notes, and upgrade buttons.
+The look is a dark-fantasy palette (bronze and gold borders, serif headings). It is original CSS, and only the general layout and feel were inspired by other idle games.
 
 ## Progression and meta (planned)
 - Oathmarks are the prestige currency. An Oath Tree for permanent perks.
@@ -39,6 +70,7 @@ Grunts, raiders, brutes (planned: shamans, wolf riders, drakes) and Warlords. Ho
 Phaser 3 + Vite with `base: './'` for GitHub Pages. A DOM UI panel sits over the canvas, saves use localStorage (`ashmere-save-v1`), units are pooled and drawn in one Graphics pass, and everything uses procedural placeholder shapes.
 
 ## Milestones
+- M1.3 (done): full stat system (DEF formula, attributes, crits), 5 classes with distinct behaviour and formation, 2 new heroes, 5 enemy classes, pre-placed packs, polished UI with tabs and hero stat sheet, v1/v2 save migration.
 - M1.2 (done): Rift stage endpoints, Warlords guarding warded Rifts, HP bars and pooled damage numbers, Drakefire nerf and ability rebalance.
 - M1.1 (done): troops removed (old saves migrated), units 2x bigger, heroes rebalanced with cleave and Ability Rank.
 - M1 (done): prototype with scrolling field, 3 heroes, hordes, gold, upgrades, Warlord every 10 stages, prestige, save.
