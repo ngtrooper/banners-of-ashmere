@@ -21,7 +21,7 @@ export const CLASSES = {
 
 export const HEROES = [
   { id: 'aldric', name: 'Ser Aldric Vane', title: 'Shield of House Vane', cls: 'knight', attr: 'light', unlock: 0,
-    sprite: { key: 'aldric', url: './sprites/aldric_v2.png', fw: 178, fh: 176, frames: 6, scale: 1, ox: 0.439, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait_v2.png',
+    sprite: { key: 'aldric', url: './sprites/aldric_v2.png', fw: 178, fh: 176, frames: 6, scale: 1, ox: 0.439, oy: 0.987, hitFrame: 3, frameDur: 0.08 }, portrait: './sprites/aldric-portrait_v3.png',
     base: { atk: 60, hp: 2600, def: 14, aspd: 0.8, move: 80, range: 40, crit: 0.05, critDmg: 1.5 },
     abil: { name: 'Bulwark Charge', text: 'Slams the 6 nearest foes for 220% ATK, knocking them back and stunning them for 1.2 s.' } },
   { id: 'kael', name: 'Kael Duskmantle', title: 'Blade of the Hollow Court', cls: 'rogue', attr: 'shadow', unlock: 400,

@@ -1,6 +1,6 @@
 from PIL import Image, ImageFilter
 import numpy as np, os
-src=Image.open('aldric_src.jpg').convert('RGB'); a=np.asarray(src).astype(float)
+src=Image.open('/workspace/aldric_src.jpg').convert('RGB'); a=np.asarray(src).astype(float)
 H,Wd,_=a.shape; lum=a.max(axis=2)
 mask=lum>40; xs=np.where(mask.sum(0)>2)[0]; x0,x1=xs[0],xs[-1]; step=(x1-x0)/6
 def seam(c,w):
@@ -65,7 +65,7 @@ for i,c in enumerate(cells): small.alpha_composite(c,(i*sw,0))
 small.save('/workspace/game/public/sprites/aldric_v2.png')
 print('frame',sw,sh,'originX',round((left*NATIVE_H/ch+2)/nw,3),'originY',round(up/ch,3))
 # portrait: native-res head crop of frame 1 upscaled x4 nearest
-c0=cells[0]; fx=int(sw*((left*NATIVE_H/ch+2)/nw)); side=int(sh*0.5)
-por=c0.crop((fx-side//2+int(side*0.08),0,fx+side//2+int(side*0.08),side)).resize((128,128),Image.NEAREST)
-por.save('/workspace/game/public/sprites/aldric-portrait_v2.png')
+c0=cells[0]; fx=int(sw*((left*NATIVE_H/ch+2)/nw)); side=int(sh*0.36)
+por=c0.crop((fx-side//2+int(side*0.28),int(sh*0.12),fx+side//2+int(side*0.28),int(sh*0.12)+side)).resize((128,128),Image.NEAREST)
+por.save('/workspace/game/public/sprites/aldric-portrait_v3.png')
 chk=Image.new('RGBA',small.size,(60,90,50,255)); chk.alpha_composite(small); chk.save('/workspace/aldric_check.png')
