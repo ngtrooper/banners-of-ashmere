@@ -30,7 +30,7 @@ for fi,(l,rr) in enumerate(boxes):
     for i in range(1,n+1):
         if i in edge or (sizes[i-1]>900 and means[i-1]<22): keep[i]=True
     bg=keep[lab]
-    soft=np.clip((lum-14)/(60-14),0,1)
+    soft=np.clip((lum-27)/(60-27),0,1)
     alpha=np.where(bg,soft,1.0)
     # feather the cut edge slightly
     a_img=Image.fromarray((alpha*255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.6)); alpha=np.minimum(np.asarray(a_img)/255.0, np.where(bg,soft,1.0)+0.25)
